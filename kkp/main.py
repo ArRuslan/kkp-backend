@@ -9,6 +9,7 @@ from tortoise import Tortoise
 from tortoise.contrib.fastapi import RegisterTortoise
 
 from .config import config
+from .routes import auth
 from .utils.custom_exception import CustomMessageException
 
 
@@ -51,6 +52,8 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=(["*"] if config.is_debug else [])
 )
+
+app.include_router(auth.router)
 
 
 @app.exception_handler(CustomMessageException)
