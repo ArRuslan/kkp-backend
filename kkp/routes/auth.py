@@ -4,11 +4,13 @@ import bcrypt
 from fastapi import APIRouter
 
 from kkp.config import config
+from kkp.dependencies import JwtSessionDep
 from kkp.models import User, Session
 from kkp.schemas.auth import RegisterResponse, RegisterRequest, LoginResponse, LoginRequest
 from kkp.utils.custom_exception import CustomMessageException
 
 router = APIRouter(prefix="/auth")
+
 
 @router.post("/register", response_model=RegisterResponse)
 async def register(data: RegisterRequest):
@@ -48,4 +50,6 @@ async def login(data: LoginRequest):
     }
 
 
-# TODO: add logout
+@router.post("/logout", status_code=204)
+async def logout_user(session: JwtSessionDep):
+    await session.delete()

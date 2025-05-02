@@ -2,6 +2,8 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel, field_validator
 
+from kkp.models.photo_video import ResourceType
+
 T = TypeVar("T", bound=BaseModel)
 
 
@@ -27,3 +29,20 @@ class PaginationQuery(BaseModel):
         if value > 100:
             return 100
         return value
+
+
+# TODO: move to separate file?
+class GeoPoint(BaseModel):
+    id: int
+    name: str | None
+    latitude: float
+    longitude: float
+
+
+# TODO: move to separate file?
+class PhotoVideoResource(BaseModel):
+    id: int
+    uploaded_at: int
+    type: ResourceType
+    photo_url: str | None
+    video_url: str | None
