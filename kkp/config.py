@@ -17,6 +17,7 @@ class SqliteDsn(AnyUrl):
 
 class _Config(BaseSettings):
     is_debug: bool = True
+    root_path: str = ""
     db_connection_string: MariaDBDsn | MySQLDsn | SqliteDsn = "sqlite://kkp.db"
     redis_connection_string: RedisDsn = "redis://127.0.0.1:6379"
     bcrypt_rounds: int = 12
@@ -36,8 +37,8 @@ class _Config(BaseSettings):
     smtp_password: str | None = None
 
     # TODO: payment service api key
-    # TODO: smtp settings
     # TODO: fcm credentials
+    # TODO: maps api credentials ?
 
     @field_validator("jwt_key", mode="before")
     def decode_jwt_key(cls, value: str | bytes) -> bytes:
@@ -51,10 +52,15 @@ class _Config(BaseSettings):
             return values.data["s3_endpoint"]
         return value
 
+    @field_validator("smtp_username", "smtp_password", mode="before")
+    def set_smtp_creds_to_none_if_empty(cls, value: str | None) -> str | None:
+        return value or None
+
 
 config = _Config()
 
-S3 = Client(config.s3_access_key_id, config.s3_access_secret_key, config.s3_endpoint_public)
+S3 = Client(config.s3_access_key_id, config.s3_access_secret_key, config.s3_endpoint)
+S3_PUBLIC = Client(config.s3_access_key_id, config.s3_access_secret_key, config.s3_endpoint_public)
 SMTP = SMTPClient(
     hostname=config.smtp_host,
     port=config.smtp_port,

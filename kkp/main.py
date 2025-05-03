@@ -53,6 +53,7 @@ app = FastAPI(
     lifespan=migrate_and_connect_orm,
     debug=config.is_debug,
     openapi_url="/openapi.json" if config.is_debug else None,
+    root_path=config.root_path,
 )
 app.add_middleware(
     CORSMiddleware,  # type: ignore
