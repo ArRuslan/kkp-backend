@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 from tortoise import Tortoise
 from tortoise.contrib.fastapi import RegisterTortoise
 
-from .config import config
+from .config import config, S3
 from .routes import auth, animals
 from .utils.custom_exception import CustomMessageException
 
@@ -29,6 +29,16 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
         else:
             await command.init_db(True)
         await Tortoise.close_connections()
+
+    await S3.put_bucket_policy(config.s3_bucket_name, {
+        "Version": "2012-10-17",
+        "Statement": [{
+            "Effect": "Allow",
+            "Principal": {"AWS": ["*"]},
+            "Action": ["s3:GetObject"],
+            "Resource": [f"arn:aws:s3:::{config.s3_bucket_name}/*"]
+        }]
+    })
 
     async with RegisterTortoise(
             app=app_,
