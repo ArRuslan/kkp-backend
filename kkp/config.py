@@ -22,6 +22,9 @@ class _Config(BaseSettings):
     redis_connection_string: RedisDsn = "redis://127.0.0.1:6379"
     bcrypt_rounds: int = 12
 
+    max_photo_size: int = 8 * 1024 * 1024
+    max_video_size: int = 64 * 1024 * 104
+
     jwt_key: bytes = Field(default_factory=partial(urandom, 16))
     jwt_ttl: int = 86400 * 7
 

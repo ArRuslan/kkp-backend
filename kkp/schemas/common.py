@@ -37,12 +37,3 @@ class GeoPoint(BaseModel):
     name: str | None
     latitude: float
     longitude: float
-
-
-# TODO: move to separate file?
-class PhotoVideoResource(BaseModel):
-    id: int
-    uploaded_at: int
-    type: ResourceType
-    photo_url: str | None
-    video_url: str | None

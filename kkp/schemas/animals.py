@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
 from kkp.models import AnimalStatus
-from kkp.schemas.common import PaginationResponse, PhotoVideoResource, GeoPoint
+from kkp.schemas.common import PaginationResponse, GeoPoint
+from kkp.schemas.resources import PhotoVideoResource
 
 
 class AnimalInfo(BaseModel):

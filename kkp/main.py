@@ -3,13 +3,14 @@ from pathlib import Path
 
 from aerich import Command
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from tortoise import Tortoise
 from tortoise.contrib.fastapi import RegisterTortoise
 
 from .config import config, S3
-from .routes import auth, animals
+from .routes import auth, animals, resources
 from .utils.custom_exception import CustomMessageException
 
 
@@ -66,6 +67,21 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(animals.router)
+app.include_router(resources.router)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_, exc: RequestValidationError) -> JSONResponse:
+    result = []
+    for err in exc.errors():
+        loc = ".".join([str(l) for l in err["loc"][1:]])
+        if loc:
+            loc = f"[{loc}] "
+        result.append(f"{loc}{err['msg']}")
+
+    return JSONResponse({
+        "errors": result,
+    }, status_code=422)
 
 
 @app.exception_handler(CustomMessageException)
