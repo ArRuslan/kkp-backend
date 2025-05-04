@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query
 
 from kkp.dependencies import JwtAuthUserDep, AnimalDep, JwtAuthVetDep
-from kkp.models import Animal, PhotoVideo
+from kkp.models import Animal, Media
 from kkp.schemas.animals import AnimalInfo, CreateAnimalRequest, EditAnimalRequest
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 
@@ -24,9 +24,9 @@ async def get_animals(user: JwtAuthUserDep, query: PaginationQuery = Query()):
 # TODO: save user somewhere (audit logs, animal status, report, etc.)
 @router.post("", response_model=AnimalInfo)
 async def add_animal(user: JwtAuthUserDep, data: CreateAnimalRequest):
-    resources = await PhotoVideo.filter(id__in=data.resource_ids)
-    animal = await Animal.create(**data.model_dump(exclude={"resource_ids"}))
-    await animal.resources.add(*resources)
+    medias = await Media.filter(id__in=data.media_ids)
+    animal = await Animal.create(**data.model_dump(exclude={"media_ids"}))
+    await animal.medias.add(*medias)
 
     return await animal.to_json()
 
@@ -38,13 +38,13 @@ async def get_animal(animal: AnimalDep):
 
 @router.patch("/{animal_id}", response_model=AnimalInfo)
 async def edit_animal(user: JwtAuthVetDep, animal: AnimalDep, data: EditAnimalRequest):
-    resource_ids = data.resource_ids
-    data = data.model_dump(exclude_defaults=True, exclude={"resource_ids"})
-    if resource_ids is not None:
+    media_ids = data.media_ids
+    data = data.model_dump(exclude_defaults=True, exclude={"media_ids"})
+    if media_ids is not None:
         # TODO: diff update?
-        resources = await PhotoVideo.filter(id__in=data.resource_ids)
-        await animal.resources.clear()
-        await animal.resources.add(*resources)
+        medias = await Media.filter(id__in=data.media_ids)
+        await animal.medias.clear()
+        await animal.medias.add(*medias)
 
     if not data:
         return await animal.to_json()

@@ -2,8 +2,6 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel, field_validator
 
-from kkp.models.photo_video import ResourceType
-
 T = TypeVar("T", bound=BaseModel)
 
 

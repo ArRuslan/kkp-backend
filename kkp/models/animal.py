@@ -22,12 +22,12 @@ class Animal(Model):
     breed: str = fields.CharField(max_length=64)
     status: AnimalStatus = fields.IntEnumField(AnimalStatus)
     description: str = fields.TextField(default="")
-    resources: fields.ManyToManyRelation[models.PhotoVideo] = fields.ManyToManyField("models.PhotoVideo")
+    medias: fields.ManyToManyRelation[models.Media] = fields.ManyToManyField("models.Media")
     current_location: models.GeoPoint | None = fields.ForeignKeyField("models.GeoPoint", null=True)  # ??
 
     async def to_json(self) -> dict:
-        total_res_count = await self.resources.all().count()
-        resources = await self.resources.all().order_by("-id").limit(5)
+        total_media_count = await self.medias.all().count()
+        medias = await self.medias.all().order_by("-id").limit(5)
 
         if self.current_location is not None:
             self.current_location = await self.current_location
@@ -38,11 +38,11 @@ class Animal(Model):
             "breed": self.breed,
             "status": self.status,
             "description": self.description,
-            "resources": {
-                "count": total_res_count,
+            "media": {
+                "count": total_media_count,
                 "items": [
-                    resource.to_json()
-                    for resource in resources
+                    media.to_json()
+                    for media in medias
                 ]
             },
             "current_location": self.current_location.to_json() if self.current_location is not None else None,

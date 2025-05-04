@@ -14,5 +14,5 @@ class AnimalReport(Model):
     created_at: datetime = fields.DatetimeField(auto_now_add=True)
     assigned_to: models.User | None = fields.ForeignKeyField("models.User", null=True, default=None, related_name="assigned_to")
     notes: str = fields.TextField(default="")
-    resources: fields.ManyToManyRelation[models.PhotoVideo] = fields.ManyToManyField("models.PhotoVideo")
+    media: fields.ManyToManyRelation[models.Media] = fields.ManyToManyField("models.Media")
     location: models.GeoPoint = fields.ForeignKeyField("models.GeoPoint")

@@ -2,11 +2,11 @@ from base64 import b64decode
 from functools import partial
 from os import urandom
 
+from aiosmtplib import SMTP as SMTPClient
+from pydantic import MariaDBDsn, MySQLDsn, AnyUrl, UrlConstraints, Field, field_validator, RedisDsn
 from pydantic_core.core_schema import ValidationInfo
 from pydantic_settings import BaseSettings
-from pydantic import MariaDBDsn, MySQLDsn, AnyUrl, UrlConstraints, Field, field_validator, HttpUrl, RedisDsn
 from s3lite import Client
-from aiosmtplib import SMTP as SMTPClient
 
 
 class SqliteDsn(AnyUrl):
