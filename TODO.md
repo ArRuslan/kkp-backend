@@ -1,0 +1,27 @@
+TODO:
+  - [ ] Animal reports (when animal is found) creation
+  - [ ] Send notification to volunteers and vets when animal report is created
+  - [ ] Recent near reports viewing for volunteers and vets
+  - [ ] Auth via google
+  - [ ] Two-factor authentication
+  - [ ] Specific animal reports viewing
+  - [ ] Specific animal treatment reports viewing
+  - [ ] Subscribing to animals
+  - [ ] CRUD for vet clinics
+  - [ ] Vet admins assigning by global admins
+  - [ ] Vets assigning by vet admins
+  - [ ] Password reset
+  - [ ] Donations (mastercard donate api?)
+  - [ ] Treatment reports creating
+  - [ ] Treatment reports viewing
+  - [ ] Volunteer requests creation
+  - [ ] Volunteer requests viewing (only for global admins)
+  - [ ] Volunteer requests approval/refusal (with notification and/or email sending)
+  - [ ] Dialogs creation
+  - [ ] Dialogs viewing
+  - [ ] Messages creation
+  - [ ] Messages viewing
+  - [ ] Sending messages via websocket
+  - [ ] Sending messages notifications
+  - [ ] Messages editing
+  - [ ] Messages deleting
