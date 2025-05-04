@@ -5,6 +5,8 @@ from enum import IntEnum
 import bcrypt
 from tortoise import Model, fields
 
+from kkp import models
+
 
 class UserRole(IntEnum):
     REGULAR = 0
@@ -20,6 +22,8 @@ class User(Model):
     email: str = fields.CharField(max_length=255, unique=True)
     password: str = fields.CharField(max_length=128)
     role: UserRole = fields.IntEnumField(UserRole, default=UserRole.REGULAR)
+    subscriptions: fields.ManyToManyRelation[models.Animal] = fields.ManyToManyField("models.Animal")
+    mfa_key: str | None = fields.CharField(max_length=32, null=True, default=None)
 
     def check_password(self, password: str) -> bool:
         return bcrypt.checkpw(password.encode("utf8"), self.password.encode("utf8"))

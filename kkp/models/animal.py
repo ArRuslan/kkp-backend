@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from enum import IntEnum
 
 from tortoise import Model, fields
@@ -24,6 +25,7 @@ class Animal(Model):
     description: str = fields.TextField(default="")
     medias: fields.ManyToManyRelation[models.Media] = fields.ManyToManyField("models.Media")
     current_location: models.GeoPoint | None = fields.ForeignKeyField("models.GeoPoint", null=True)  # ??
+    updated_at: datetime = fields.DatetimeField(auto_now_add=True)
 
     async def to_json(self) -> dict:
         total_media_count = await self.medias.all().count()
