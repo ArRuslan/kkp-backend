@@ -2,6 +2,7 @@ TODO:
   - [ ] Animal reports (when animal is found) creation
   - [ ] Send notification to volunteers and vets when animal report is created
   - [ ] Recent near reports viewing for volunteers and vets
+  - [ ] Recently updated animals viewing for all users
   - [ ] Auth via google
   - [ ] Two-factor authentication
   - [ ] Specific animal reports viewing
@@ -10,6 +11,7 @@ TODO:
   - [ ] CRUD for vet clinics
   - [ ] Vet admins assigning by global admins
   - [ ] Vets assigning by vet admins
+  - [ ] Near vet clinics search
   - [ ] Password reset
   - [ ] Donations (mastercard donate api?)
   - [ ] Treatment reports creating
@@ -25,3 +27,4 @@ TODO:
   - [ ] Sending messages notifications
   - [ ] Messages editing
   - [ ] Messages deleting
+  - [ ] FAQs ??
