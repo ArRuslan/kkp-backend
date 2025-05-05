@@ -19,5 +19,5 @@ class VolunteerRequest(Model):
     user: models.User = fields.ForeignKeyField("models.User")
     created_at: datetime = fields.DatetimeField(auto_now_add=True)
     text: str = fields.TextField()
-    medias: fields.ManyToManyRelation[models.Media]
+    medias: fields.ManyToManyRelation[models.Media] = fields.ManyToManyField("models.Media")
     status: VolRequestStatus = fields.IntEnumField(VolRequestStatus, default=VolRequestStatus.REQUESTED)

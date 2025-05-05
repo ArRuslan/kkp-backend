@@ -24,7 +24,6 @@ class User(Model):
     role: UserRole = fields.IntEnumField(UserRole, default=UserRole.REGULAR)
     subscriptions: fields.ManyToManyRelation[models.Animal] = fields.ManyToManyField("models.Animal")
     mfa_key: str | None = fields.CharField(max_length=32, null=True, default=None)
-    photo: models.Media | None = fields.ForeignKeyField("models.Media", null=True, default=None)
 
     def check_password(self, password: str) -> bool:
         return bcrypt.checkpw(password.encode("utf8"), self.password.encode("utf8"))
