@@ -17,5 +17,4 @@ class MediaInfo(BaseModel):
     id: int
     uploaded_at: int
     type: MediaType
-    photo_url: str | None
-    video_url: str | None
+    url: str

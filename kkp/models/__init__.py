@@ -11,3 +11,4 @@ from .external_auth import ExternalAuth, ExtAuthType
 from .dialog import Dialog
 from .message import Message
 from .user_profile_photo import UserProfilePhoto
+from .donation import Donation
