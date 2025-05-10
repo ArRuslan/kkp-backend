@@ -5,11 +5,13 @@ from kkp.models import Animal, Media
 from kkp.schemas.animals import AnimalInfo, CreateAnimalRequest, EditAnimalRequest
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 
-router = APIRouter(prefix="/animals")
+router = APIRouter(prefix="/animals", deprecated=True)
 
 
 @router.get("", response_model=PaginationResponse[AnimalInfo])
 async def get_animals(user: JwtAuthUserDep, query: PaginationQuery = Query()):
+    """ Probably will be deleted or moved to admin api because this route allows any user to view ALL animals """
+
     return {
         "count": await Animal.all().count(),
         "result": [
@@ -22,8 +24,10 @@ async def get_animals(user: JwtAuthUserDep, query: PaginationQuery = Query()):
 
 
 # TODO: save user somewhere (audit logs, animal status, report, etc.)
-@router.post("", response_model=AnimalInfo)
+@router.post("", response_model=AnimalInfo, deprecated=True)
 async def add_animal(user: JwtAuthUserDep, data: CreateAnimalRequest):
+    """ Probably will be deleted or moved to admin api because animals should be added via found animal reports (?) """
+
     medias = await Media.filter(id__in=data.media_ids)
     animal = await Animal.create(**data.model_dump(exclude={"media_ids"}))
     await animal.medias.add(*medias)
@@ -33,11 +37,14 @@ async def add_animal(user: JwtAuthUserDep, data: CreateAnimalRequest):
 
 @router.get("/{animal_id}", response_model=AnimalInfo)
 async def get_animal(animal: AnimalDep):
+    """ Idk if it is a good idea to allow any user (even unauthenticated ones) to get any animal """
     return await animal.to_json()
 
 
 @router.patch("/{animal_id}", response_model=AnimalInfo)
 async def edit_animal(user: JwtAuthVetDep, animal: AnimalDep, data: EditAnimalRequest):
+    """ Probably will be deleted or moved to vet api """
+
     media_ids = data.media_ids
     data = data.model_dump(exclude_defaults=True, exclude={"media_ids"})
     if media_ids is not None:
@@ -62,4 +69,6 @@ async def edit_animal(user: JwtAuthVetDep, animal: AnimalDep, data: EditAnimalRe
 
 @router.delete("/{animal_id}", status_code=204)
 async def delete_animal(user: JwtAuthVetDep, animal: AnimalDep):
+    """ Probably will be deleted or moved to admin api """
+
     await animal.delete()
