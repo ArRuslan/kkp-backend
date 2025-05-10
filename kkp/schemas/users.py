@@ -4,14 +4,17 @@ from kkp.models import UserRole
 from kkp.schemas.media import MediaInfo
 
 
-class UserInfo(BaseModel):
+class UserBaseInfo(BaseModel):
     id: int
     first_name: str
     last_name: str
+    photo: MediaInfo | None
+
+
+class UserInfo(UserBaseInfo):
     email: EmailStr
     role: UserRole
     mfa_enabled: bool
-    photo: MediaInfo | None
 
 
 class UserEditRequest(BaseModel):

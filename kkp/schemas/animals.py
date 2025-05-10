@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from kkp.models import AnimalStatus
-from kkp.schemas.common import PaginationResponse, GeoPoint
+from kkp.schemas.common import PaginationResponse, GeoPointInfo
 from kkp.schemas.media import MediaInfo
 
 
@@ -12,7 +12,7 @@ class AnimalInfo(BaseModel):
     status: AnimalStatus
     description: str
     media: PaginationResponse[MediaInfo]
-    current_location: GeoPoint | None
+    current_location: GeoPointInfo | None
     updated_at: int
 
 
@@ -22,7 +22,7 @@ class CreateAnimalRequest(BaseModel):
     status: AnimalStatus
     description: str
     media_ids: list[int]
-    current_location: GeoPoint | None
+    current_location: GeoPointInfo | None
 
 
 class EditAnimalRequest(BaseModel):
@@ -31,4 +31,4 @@ class EditAnimalRequest(BaseModel):
     status: AnimalStatus | None = None
     description: str | None = None
     media_ids: list[int] | None = None
-    current_location: GeoPoint | None = None
+    current_location: GeoPointInfo | None = None

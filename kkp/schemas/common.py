@@ -30,7 +30,7 @@ class PaginationQuery(BaseModel):
 
 
 # TODO: move to separate file?
-class GeoPoint(BaseModel):
+class GeoPointInfo(BaseModel):
     id: int
     name: str | None
     latitude: float
