@@ -10,7 +10,7 @@ from tortoise import Tortoise
 from tortoise.contrib.fastapi import RegisterTortoise
 
 from .config import config, S3
-from .routes import auth, animals, media, users
+from .routes import auth, animals, media, users, subscriptions
 from .utils.custom_exception import CustomMessageException
 
 
@@ -69,6 +69,7 @@ app.include_router(auth.router)
 app.include_router(animals.router)
 app.include_router(media.router)
 app.include_router(users.router)
+app.include_router(subscriptions.router)
 
 
 @app.exception_handler(RequestValidationError)

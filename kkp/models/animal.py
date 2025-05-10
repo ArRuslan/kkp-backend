@@ -48,4 +48,5 @@ class Animal(Model):
                 ]
             },
             "current_location": self.current_location.to_json() if self.current_location is not None else None,
+            "updated_at": int(self.updated_at.timestamp()),
         }

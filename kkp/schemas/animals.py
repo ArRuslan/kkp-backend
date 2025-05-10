@@ -13,6 +13,7 @@ class AnimalInfo(BaseModel):
     description: str
     media: PaginationResponse[MediaInfo]
     current_location: GeoPoint | None
+    updated_at: int
 
 
 class CreateAnimalRequest(BaseModel):
