@@ -13,6 +13,8 @@ async def jwt_auth_session(
     authorization = authorization or x_token
     if not authorization or (session := await Session.from_jwt(authorization)) is None:
         raise CustomMessageException("Invalid session.", 401)
+    if not session.active:
+        raise CustomMessageException("Session is not active.", 403)
 
     return session
 

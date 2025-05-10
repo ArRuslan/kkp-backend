@@ -1,10 +1,11 @@
 TODO:
+  - [x] User profile
   - [ ] Animal reports (when animal is found) creation
   - [ ] Send notification to volunteers and vets when animal report is created
   - [ ] Recent near reports viewing for volunteers and vets
   - [ ] Recently updated animals viewing for all users
   - [ ] Auth via google
-  - [ ] Two-factor authentication
+  - [x] Two-factor authentication
   - [ ] Specific animal reports viewing
   - [ ] Specific animal treatment reports viewing
   - [ ] Subscribing to animals

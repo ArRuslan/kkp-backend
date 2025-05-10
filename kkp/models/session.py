@@ -15,6 +15,7 @@ class Session(Model):
     user: models.User = fields.ForeignKeyField("models.User")
     nonce: str = fields.CharField(max_length=16, default=lambda: urandom(8).hex())
     created_at: datetime = fields.DatetimeField(auto_now_add=True)
+    active: bool = fields.BooleanField(default=True)
 
     def to_jwt(self) -> str:
         return JWT.encode(

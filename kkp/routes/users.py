@@ -2,8 +2,9 @@ from fastapi import APIRouter
 
 from kkp.dependencies import JwtAuthUserDep
 from kkp.models import Media, User, UserProfilePhoto
-from kkp.schemas.users import UserInfo, UserEditRequest
+from kkp.schemas.users import UserInfo, UserEditRequest, UserMfaEnableRequest, UserMfaDisableRequest
 from kkp.utils.custom_exception import CustomMessageException
+from kkp.utils.mfa import Mfa
 
 router = APIRouter(prefix="/user")
 
@@ -29,5 +30,35 @@ async def update_user_info(user: JwtAuthUserDep, data: UserEditRequest):
             await UserProfilePhoto.update_or_create(user=user, defaults={"media": media})
     if update_data:
         await user.update_from_dict(update_data).save(update_fields=list(update_data.keys()))
+
+    return await user.to_json()
+
+
+@router.post("/mfa/enable", response_model=UserInfo)
+async def enable_mfa(user: JwtAuthUserDep, data: UserMfaEnableRequest):
+    if user.mfa_key is not None:
+        raise CustomMessageException("Mfa already enabled.")
+    if data.code not in Mfa.get_codes(data.key):
+        raise CustomMessageException("Invalid code.")
+    if not user.check_password(data.password):
+        raise CustomMessageException("Wrong password!")
+
+    user.mfa_key = data.key
+    await user.save(update_fields=["mfa_key"])
+
+    return await user.to_json()
+
+
+@router.post("/mfa/disable", response_model=UserInfo)
+async def disable_mfa(user: JwtAuthUserDep, data: UserMfaDisableRequest):
+    if user.mfa_key is None:
+        raise CustomMessageException("Mfa is not enabled.")
+    if data.code not in Mfa.get_codes(user.mfa_key):
+        raise CustomMessageException("Invalid code.")
+    if not user.check_password(data.password):
+        raise CustomMessageException("Wrong password!")
+
+    user.mfa_key = None
+    await user.save(update_fields=["mfa_key"])
 
     return await user.to_json()

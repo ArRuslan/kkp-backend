@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from kkp.config import config
 from kkp.models.user import UserRole
@@ -25,3 +25,13 @@ class RegisterResponse(BaseModel):
 
 class LoginResponse(RegisterResponse):
     ...
+
+
+class MfaResponse(BaseModel):
+    mfa_token: str
+    expires_at: int
+
+
+class MfaVerifyRequest(BaseModel):
+    mfa_code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    mfa_token: str
