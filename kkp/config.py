@@ -3,24 +3,18 @@ from functools import partial
 from os import urandom
 from pathlib import Path
 
+from aiofcm import FCM as FCMClient
 from aiosmtplib import SMTP as SMTPClient
-from pydantic import MariaDBDsn, MySQLDsn, AnyUrl, UrlConstraints, Field, field_validator, RedisDsn
+from pydantic import MariaDBDsn, MySQLDsn, Field, field_validator, RedisDsn
 from pydantic_core.core_schema import ValidationInfo
 from pydantic_settings import BaseSettings
 from s3lite import Client
-from aiofcm import FCM as FCMClient
-
-
-class SqliteDsn(AnyUrl):
-    _constraints = UrlConstraints(
-        allowed_schemes=["sqlite"],
-    )
 
 
 class _Config(BaseSettings):
     is_debug: bool = True
     root_path: str = ""
-    db_connection_string: MariaDBDsn | MySQLDsn | SqliteDsn = "sqlite://kkp.db"
+    db_connection_string: MariaDBDsn | MySQLDsn = ""
     redis_connection_string: RedisDsn = "redis://127.0.0.1:6379"
     fcm_config_path: Path = "fcm_config.json"
     bcrypt_rounds: int = 12
