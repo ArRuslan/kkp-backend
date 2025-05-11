@@ -11,7 +11,7 @@ TODO:
   - [x] Subscribing to animals
   - [ ] CRUD for vet clinics
   - [x] Admin CRUD (but without creation) for users
-  - [ ] Admin CRUD (but without creation) for animals
+  - [x] Admin CRUD (but without creation) for animals
   - [ ] Admin CRUD (but without creation) for animal reports
   - [ ] Admin CRUD (but without creation) for media ?
   - [ ] Admin CRUD (but without creation) for dialogs ?

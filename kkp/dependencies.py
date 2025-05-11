@@ -53,12 +53,21 @@ async def animal_dep(animal_id: int) -> Animal:
     return animal
 
 
-async def user_dep(user_id: int, _: JwtAuthAdminDep) -> User:
+AnimalDep = Annotated[Animal, Depends(animal_dep)]
+
+
+async def admin_user_dep(user_id: int, _: JwtAuthAdminDep) -> User:
     if (user := await User.get_or_none(id=user_id)) is None:
         raise CustomMessageException("Unknown user.", 404)
 
     return user
 
 
-AnimalDep = Annotated[Animal, Depends(animal_dep)]
-AdminUserDep = Annotated[User, Depends(user_dep)]
+AdminUserDep = Annotated[User, Depends(admin_user_dep)]
+
+
+async def admin_animal_dep(_: JwtAuthAdminDep, animal: AnimalDep) -> Animal:
+    return animal
+
+
+AdminAnimalDep = Annotated[Animal, Depends(admin_animal_dep)]

@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Query
+from pytz import UTC
 
 from kkp.dependencies import JwtAuthUserDep, AnimalDep, JwtAuthVetDep
 from kkp.models import Animal, Media
@@ -61,6 +64,7 @@ async def edit_animal(user: JwtAuthVetDep, animal: AnimalDep, data: EditAnimalRe
         field_idx = update_fields.index("current_location")
         update_fields[field_idx] += "_id"
 
+    data["updated_at"] = datetime.now(UTC)
     animal.update_from_dict(data)
     await animal.save(update_fields=list(data.keys()))
 
