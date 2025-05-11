@@ -11,13 +11,27 @@ fastapi = "^0.115.12"
 uvicorn = "^0.34.2"
 pydantic = {extras = ["email"], version = "^2.11.4"}
 tortoise-orm = {extras = ["accel", "asyncmy"], version = "^0.25.0"}
-s3lite = "^0.1.8"
+s3lite = "^0.1.9"
 pydantic-settings = "^2.9.1"
 aerich = "^0.8.2"
 bcrypt = "^4.3.0"
 aiosmtplib = "^4.0.1"
+aiofcm = {git = "https://github.com/RuslanUC/aiofcm"}
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+pytest-asyncio = "^0.26.0"
+asgi-lifespan = "^2.1.0"
+pytest-httpx = "^0.35.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "--cov-report=xml --cov-append --cov=ticketer"
+
+[tool.coverage.run]
+data_file = "coverage.coverage"

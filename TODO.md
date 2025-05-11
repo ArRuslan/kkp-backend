@@ -32,6 +32,6 @@ TODO:
   - [ ] Messages viewing
   - [ ] Sending messages via websocket
   - [ ] Sending messages notifications
-  - [ ] Messages editing
+  - [ ] Messages editing - ?
   - [ ] Messages deleting
   - [ ] FAQs ??

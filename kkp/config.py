@@ -1,12 +1,14 @@
 from base64 import b64decode
 from functools import partial
 from os import urandom
+from pathlib import Path
 
 from aiosmtplib import SMTP as SMTPClient
 from pydantic import MariaDBDsn, MySQLDsn, AnyUrl, UrlConstraints, Field, field_validator, RedisDsn
 from pydantic_core.core_schema import ValidationInfo
 from pydantic_settings import BaseSettings
 from s3lite import Client
+from aiofcm import FCM as FCMClient
 
 
 class SqliteDsn(AnyUrl):
@@ -20,6 +22,7 @@ class _Config(BaseSettings):
     root_path: str = ""
     db_connection_string: MariaDBDsn | MySQLDsn | SqliteDsn = "sqlite://kkp.db"
     redis_connection_string: RedisDsn = "redis://127.0.0.1:6379"
+    fcm_config_path: Path = "fcm_config.json"
     bcrypt_rounds: int = 12
 
     max_photo_size: int = 8 * 1024 * 1024
@@ -70,3 +73,4 @@ SMTP = SMTPClient(
     username=config.smtp_username,
     password=config.smtp_password,
 )
+FCM = FCMClient(str(config.fcm_config_path))
