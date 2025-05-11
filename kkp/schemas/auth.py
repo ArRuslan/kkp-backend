@@ -35,3 +35,17 @@ class MfaResponse(BaseModel):
 class MfaVerifyRequest(BaseModel):
     mfa_code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
     mfa_token: str
+
+
+class GoogleOAuthData(BaseModel):
+    code: str
+    state: str | None = None
+
+
+class GoogleAuthUrlData(BaseModel):
+    url: str
+
+
+class ConnectGoogleData(LoginResponse):
+    token: str | None
+    connect: bool

@@ -6,11 +6,12 @@ from fastapi import APIRouter
 from starlette.responses import JSONResponse
 
 from kkp.config import config
-from kkp.dependencies import JwtSessionDep
-from kkp.models import User, Session
+from kkp.dependencies import JwtSessionDep, JwtAuthUserDep
+from kkp.models import User, Session, ExternalAuth, ExtAuthType
 from kkp.schemas.auth import RegisterResponse, RegisterRequest, LoginResponse, LoginRequest, MfaResponse, \
-    MfaVerifyRequest
+    MfaVerifyRequest, GoogleAuthUrlData, ConnectGoogleData, GoogleOAuthData
 from kkp.utils.custom_exception import CustomMessageException
+from kkp.utils.google_oauth import authorize_google
 from kkp.utils.jwt import JWT
 from kkp.utils.mfa import Mfa
 
@@ -92,4 +93,86 @@ async def verify_mfa_login(data: MfaVerifyRequest):
     return {
         "token": session.to_jwt(),
         "expires_at": int(time() + config.AUTH_JWT_TTL),
+    }
+
+
+@router.get("/google", response_model=GoogleAuthUrlData)
+async def google_auth_link():
+    return {
+        "url": (
+            f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={config.OAUTH_GOOGLE_CLIENT_ID}"
+            f"&redirect_uri={config.OAUTH_GOOGLE_REDIRECT}&scope=profile%20email&access_type=offline"
+        ),
+    }
+
+
+@router.post("/google/connect", response_model=GoogleAuthUrlData)
+async def google_auth_connect_link(user: JwtAuthUserDep):
+    if await ExternalAuth.filter(user=user).exists():
+        raise CustomMessageException("You already have connected google account.")
+
+    state = JWT.encode({"user_id": user.id, "type": "google-connect"}, config.JWT_KEY, expires_in=180)
+    return {
+        "url": (
+            f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={config.OAUTH_GOOGLE_CLIENT_ID}"
+            f"&redirect_uri={config.OAUTH_GOOGLE_REDIRECT}&scope=profile%20email&access_type=offline&state={state}"
+        ),
+    }
+
+
+@router.post("/google/callback", response_model=ConnectGoogleData)
+async def google_auth_callback(data: GoogleOAuthData):
+    state = JWT.decode(data.state or "", config.JWT_KEY)
+    if state is not None and state.get("type") != "google-connect":
+        state = None
+
+    data, token_data = await authorize_google(data.code)
+    existing_auth = await ExternalAuth.get_or_none(type=ExtAuthType.GOOGLE, external_id=data["id"]).select_related("user")
+    if existing_auth is not None:
+        existing_auth.access_token = token_data["access_token"]
+        existing_auth.refresh_token = token_data["refresh_token"]
+        existing_auth.token_expires_at = int(time() + token_data["expires_in"])
+        await existing_auth.save(update_fields=["access_token", "refresh_token", "token_expires_at"])
+
+    user = None
+    if state is not None and existing_auth is None:
+        # Connect external service to a user account
+        if await ExternalAuth.filter(user__id=state["user_id"]).exists():
+            raise CustomMessageException("This google account is already connected to an account.")
+
+        await ExternalAuth.create(
+            user=await User.get(id=state["user_id"]),
+            type="google",
+            external_id=data["id"],
+            access_token=token_data["access_token"],
+            refresh_token=token_data["refresh_token"],
+            expires_at=int(time() + token_data["expires_in"]),
+        )
+    elif state is not None and existing_auth is not None:
+        # Trying to connect an external account that is already connected, ERROR!!
+        raise CustomMessageException("This google account is already connected to an account.")
+    elif state is None and existing_auth is None:
+        # Register new user
+        user = await User.create(first_name=data["given_name"], last_name=data["family_name"])
+        await ExternalAuth.create(
+            user=user,
+            type="google",
+            external_id=data["id"],
+            access_token=token_data["access_token"],
+            refresh_token=token_data["refresh_token"],
+            expires_at=int(time() + token_data["expires_in"]),
+        )
+    elif state is None and existing_auth is not None:
+        # Authorize user
+        user = existing_auth.user
+    else:
+        raise RuntimeError("Unreachable")
+
+    if user is None:
+        return {"token": None, "expires_at": 0, "connect": True}
+
+    session = await Session.create(user=user, active=True)
+    return {
+        "token": session.to_jwt(),
+        "expires_at": int(time() + config.jwt_ttl),
     }
