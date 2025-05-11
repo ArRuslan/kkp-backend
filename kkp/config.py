@@ -42,8 +42,11 @@ class _Config(BaseSettings):
     smtp_username: str | None = None
     smtp_password: str | None = None
 
+    oauth_google_client_id: str = ""
+    oauth_google_client_secret: str = ""
+    oauth_google_redirect: str = "http://127.0.0.1:8000/auth/google/callback"
+
     # TODO: payment service api key
-    # TODO: fcm credentials
     # TODO: maps api credentials ?
 
     @field_validator("jwt_key", mode="before")
