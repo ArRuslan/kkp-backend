@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from kkp.db.point import Point, STDistanceSphere
 from kkp.dependencies import JwtAuthUserDep
 from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport
 from kkp.schemas.animal_reports import CreateAnimalReportsRequest
@@ -9,10 +10,15 @@ router = APIRouter(prefix="/animal-reports")
 
 @router.post("", response_model=CreateAnimalReportsRequest)
 async def create_animal_report(user: JwtAuthUserDep, data: CreateAnimalReportsRequest):
-    # TODO: search for existing GeoPoints in 10-25m radius instead of creating new every time
-    #  note to myself: it requires changing GeoPoint latitude and longitude to some database-native spatial column type
-    #  (e.g. POINT in MariaDB)
-    location = await GeoPoint.create(name=None, latitude=data.latitude, longitude=data.longitude)
+    location = await GeoPoint\
+        .annotate(dist=STDistanceSphere("point", Point(data.longitude, data.latitude)))\
+        .filter(dist__lt=100)\
+        .order_by("dist")\
+        .first()
+    if location is None:
+        location = await GeoPoint.create(
+            name=None, latitude=data.latitude, longitude=data.longitude, point=Point(data.longitude, data.latitude),
+        )
 
     # TODO: handle already existing animals
     animal = await Animal.create(

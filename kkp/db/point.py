@@ -1,5 +1,7 @@
+from pypika_tortoise import CustomFunction
 from tortoise import fields
 from tortoise.exceptions import FieldError
+from tortoise.expressions import Function
 
 
 class Point:
@@ -23,3 +25,7 @@ class PointField(fields.Field[Point]):
             raise FieldError("The latitude must be a float.")
 
         return f"POINT({value.lon}, {value.lat})"
+
+
+class STDistanceSphere(Function):
+    database_func = CustomFunction("ST_Distance_Sphere", ["col", "point"])
