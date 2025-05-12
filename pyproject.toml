@@ -25,13 +25,14 @@ pytest-cov = "^6.1.1"
 pytest-asyncio = "^0.26.0"
 asgi-lifespan = "^2.1.0"
 pytest-httpx = "^0.35.0"
+aiodocker = "^0.24.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-addopts = "--cov-report=xml --cov-append --cov=ticketer"
+addopts = "--cov-report=xml --cov-append --cov=kkp"
 
 [tool.coverage.run]
 data_file = "coverage.coverage"

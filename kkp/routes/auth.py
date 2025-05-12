@@ -57,7 +57,7 @@ async def login(data: LoginRequest):
                 "s": session.id,
                 "u": user.id,
                 "n": session.nonce[:8],
-            }, config.JWT_KEY, expires_in=mfa_ttl),
+            }, config.jwt_key, expires_in=mfa_ttl),
             "expires_at": int(time() + mfa_ttl),
         }, 400)
 
@@ -74,7 +74,7 @@ async def logout_user(session: JwtSessionDep):
 
 @router.post("/login/mfa", response_model=LoginResponse)
 async def verify_mfa_login(data: MfaVerifyRequest):
-    if (payload := JWT.decode(data.mfa_token, config.JWT_KEY)) is None:
+    if (payload := JWT.decode(data.mfa_token, config.jwt_key)) is None:
         raise CustomMessageException("Invalid mfa token!")
 
     session = await Session.get_or_none(
@@ -92,7 +92,7 @@ async def verify_mfa_login(data: MfaVerifyRequest):
 
     return {
         "token": session.to_jwt(),
-        "expires_at": int(time() + config.AUTH_JWT_TTL),
+        "expires_at": int(time() + config.jwt_ttl),
     }
 
 
@@ -100,8 +100,8 @@ async def verify_mfa_login(data: MfaVerifyRequest):
 async def google_auth_link():
     return {
         "url": (
-            f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={config.OAUTH_GOOGLE_CLIENT_ID}"
-            f"&redirect_uri={config.OAUTH_GOOGLE_REDIRECT}&scope=profile%20email&access_type=offline"
+            f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={config.oauth_google_client_id}"
+            f"&redirect_uri={config.oauth_google_redirect}&scope=profile%20email&access_type=offline"
         ),
     }
 
@@ -111,18 +111,18 @@ async def google_auth_connect_link(user: JwtAuthUserDep):
     if await ExternalAuth.filter(user=user).exists():
         raise CustomMessageException("You already have connected google account.")
 
-    state = JWT.encode({"user_id": user.id, "type": "google-connect"}, config.JWT_KEY, expires_in=180)
+    state = JWT.encode({"user_id": user.id, "type": "google-connect"}, config.jwt_key, expires_in=180)
     return {
         "url": (
-            f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={config.OAUTH_GOOGLE_CLIENT_ID}"
-            f"&redirect_uri={config.OAUTH_GOOGLE_REDIRECT}&scope=profile%20email&access_type=offline&state={state}"
+            f"https://accounts.google.com/o/oauth2/auth?response_type=code&client_id={config.oauth_google_client_id}"
+            f"&redirect_uri={config.oauth_google_redirect}&scope=profile%20email&access_type=offline&state={state}"
         ),
     }
 
 
 @router.post("/google/callback", response_model=ConnectGoogleData)
 async def google_auth_callback(data: GoogleOAuthData):
-    state = JWT.decode(data.state or "", config.JWT_KEY)
+    state = JWT.decode(data.state or "", config.jwt_key)
     if state is not None and state.get("type") != "google-connect":
         state = None
 

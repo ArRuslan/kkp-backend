@@ -49,6 +49,20 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
     ):
         yield
 
+        from os import environ
+        if environ.get("TORTOISE_TEST_DROP_TABLES") == "1":
+            from tortoise import connections
+            conn = connections.get("default")
+            tables = await conn.execute_query_dict(
+                "select table_name from information_schema.tables where table_schema = 'kkp'"
+            )
+            drop_script = ["SET FOREIGN_KEY_CHECKS = 0;"]
+            for table in tables:
+                drop_script.append(f"DROP TABLE {table['table_name']};")
+            drop_script.append(f"SET FOREIGN_KEY_CHECKS = 1;")
+
+            await conn.execute_script("\n".join(drop_script))
+
 
 app = FastAPI(
     lifespan=migrate_and_connect_orm,
