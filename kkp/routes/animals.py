@@ -3,10 +3,12 @@ from datetime import datetime
 from fastapi import APIRouter, Query
 from pytz import UTC
 
-from kkp.dependencies import JwtAuthUserDep, AnimalDep, JwtAuthVetDep
-from kkp.models import Animal, Media
+from kkp.dependencies import JwtAuthUserDep, AnimalDep, JwtAuthVetDep, JwtAuthUserDepN
+from kkp.models import Animal, Media, AnimalReport, TreatmentReport
+from kkp.schemas.animal_reports import AnimalReportInfo
 from kkp.schemas.animals import AnimalInfo, CreateAnimalRequest, EditAnimalRequest
 from kkp.schemas.common import PaginationResponse, PaginationQuery
+from kkp.schemas.treatment_reports import TreatmentReportInfo
 
 router = APIRouter(prefix="/animals", deprecated=True)
 
@@ -76,3 +78,33 @@ async def delete_animal(user: JwtAuthVetDep, animal: AnimalDep):
     """ Probably will be deleted or moved to admin api """
 
     await animal.delete()
+
+
+@router.get("/{animal_id}/reports", response_model=PaginationResponse[AnimalReportInfo], dependencies=[JwtAuthUserDepN], deprecated=False)
+async def get_animals(animal: AnimalDep, query: PaginationQuery = Query()):
+    return {
+        "count": await AnimalReport.filter(animal=animal).count(),
+        "result": [
+            await report.to_json()
+            for report in await AnimalReport.filter(animal=animal)\
+                .select_related("reported_by", "assigned_to", "animal", "location")\
+                .limit(query.page_size)\
+                .offset(query.page_size * (query.page - 1))
+        ],
+    }
+
+
+@router.get("/{animal_id}/treatment-reports", response_model=PaginationResponse[TreatmentReportInfo], dependencies=[JwtAuthUserDepN], deprecated=False)
+async def get_animals(animal: AnimalDep, query: PaginationQuery = Query()):
+    return {
+        "count": await TreatmentReport.filter(report__animal=animal).count(),
+        "result": [
+            await report.to_json()
+            for report in await TreatmentReport.filter(report__animal=animal)\
+                .select_related(
+                "report", "report__reported_by", "report__assigned_to", "report__animal", "report__location"
+                )\
+                .limit(query.page_size)\
+                .offset(query.page_size * (query.page - 1))
+        ],
+    }

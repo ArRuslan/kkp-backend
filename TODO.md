@@ -6,8 +6,8 @@ TODO:
   - [ ] Recently updated animals viewing for all users - ???
   - [x] Auth via google
   - [x] Two-factor authentication
-  - [ ] Specific animal reports viewing
-  - [ ] Specific animal treatment reports viewing
+  - [x] Specific animal reports viewing
+  - [x] Specific animal treatment reports viewing
   - [x] Subscribing to animals
   - [ ] CRUD for vet clinics
   - [x] Admin CRUD (but without creation) for users
