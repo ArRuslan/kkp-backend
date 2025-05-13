@@ -28,6 +28,16 @@ class User(Model):
     def check_password(self, password: str) -> bool:
         return bcrypt.checkpw(password.encode("utf8"), self.password.encode("utf8"))
 
+    async def to_json_base(self) -> dict:
+        photo = await models.UserProfilePhoto.get_or_none(user=self).select_related("photo")
+
+        return {
+            "id": self.id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "photo": photo.photo.to_json() if photo is not None else None,
+        }
+
     async def to_json(self) -> dict:
         photo = await models.UserProfilePhoto.get_or_none(user=self).select_related("photo")
 

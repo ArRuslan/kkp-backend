@@ -26,10 +26,10 @@ TODO:
   - [ ] Volunteer requests creation
   - [ ] Volunteer requests viewing (only for global admins)
   - [ ] Volunteer requests approval/refusal (with notification and/or email sending)
-  - [ ] Dialogs creation
-  - [ ] Dialogs viewing
-  - [ ] Messages creation
-  - [ ] Messages viewing
+  - [x] Dialogs creation
+  - [x] Dialogs viewing
+  - [x] Messages creation
+  - [x] Messages viewing
   - [ ] Sending messages via websocket
   - [ ] Sending messages notifications
   - [ ] Messages editing - ?
