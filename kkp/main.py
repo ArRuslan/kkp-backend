@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
-from tortoise import Tortoise
+from tortoise import Tortoise, generate_config
 from tortoise.contrib.fastapi import RegisterTortoise
 
 from .config import config, S3
@@ -20,7 +20,7 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
         migrations_dir = "data/migrations"
 
         command = Command({
-            "connections": {"default": str(config.db_connection_string)},
+            "connections": {"default": config.db_connection_string},
             "apps": {"models": {"models": ["kkp.models", "aerich.models"], "default_connection": "default"}},
         }, location=migrations_dir)
         await command.init()
@@ -41,27 +41,21 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
         }]
     })
 
+    from os import environ
+
+    orm_config = generate_config(
+        config.db_connection_string,
+        app_modules={"models": ["kkp.models"]},
+        testing=environ.get("TORTOISE_TESTING") == "1",
+    )
+
     async with RegisterTortoise(
             app=app_,
-            db_url=str(config.db_connection_string),
-            modules={"models": ["kkp.models"]},
+            config=orm_config,
             generate_schemas=True,
+            _create_db=environ.get("TORTOISE_TESTING") == "1",
     ):
         yield
-
-        from os import environ
-        if environ.get("TORTOISE_TEST_DROP_TABLES") == "1":
-            from tortoise import connections
-            conn = connections.get("default")
-            tables = await conn.execute_query_dict(
-                "select table_name from information_schema.tables where table_schema = 'kkp'"
-            )
-            drop_script = ["SET FOREIGN_KEY_CHECKS = 0;"]
-            for table in tables:
-                drop_script.append(f"DROP TABLE {table['table_name']};")
-            drop_script.append(f"SET FOREIGN_KEY_CHECKS = 1;")
-
-            await conn.execute_script("\n".join(drop_script))
 
 
 app = FastAPI(

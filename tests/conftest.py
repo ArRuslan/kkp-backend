@@ -3,12 +3,11 @@ from time import time
 from typing import AsyncGenerator
 
 import pytest_asyncio
-from aiodocker import Docker
+from aiodocker import Docker, DockerError
 from asgi_lifespan import LifespanManager
 from bcrypt import gensalt, hashpw
 from fastapi import FastAPI
 from httpx import AsyncClient, RemoteProtocolError, ASGITransport
-from tortoise import Tortoise
 
 MINIO_PORT = 55001
 MINIO_ENDPOINT = f"http://127.0.0.1:{MINIO_PORT}"
@@ -22,8 +21,8 @@ MARIADB_DB = "kkp"
 environ["s3_endpoint"] = MINIO_ENDPOINT
 environ["s3_access_key_id"] = MINIO_CRED
 environ["s3_access_secret_key"] = MINIO_CRED
-environ["db_connection_string"] = f"mysql://{MARIADB_USER}:{MARIADB_PASS}@127.0.0.1:{MARIADB_PORT}/{MARIADB_DB}"
-environ["TORTOISE_TEST_DROP_TABLES"] = "1"
+environ["db_connection_string"] = f"mysql://root:{MARIADB_PASS}@127.0.0.1:{MARIADB_PORT}/{MARIADB_DB}_{{}}"
+environ["TORTOISE_TESTING"] = "1"
 
 from kkp.main import app
 from kkp.models import UserRole, User, Session
@@ -62,7 +61,16 @@ async def run_minio_in_docker():
     start_time = time()
 
     docker = Docker()
-    container = await docker.containers.run({
+
+    try:
+        existing_container = await docker.containers.get("kkp-test-minio")
+    except DockerError as e:
+        if e.status != 404:
+            raise
+    else:
+        await existing_container.delete(force=True)
+
+    container = await docker.containers.run(name="kkp-test-minio", config={
         "Image": "bitnami/minio:2024",
         "Env": [
             "MINIO_ROOT_USER=minioadmin",
@@ -121,7 +129,15 @@ async def run_mariadb_in_docker():
     start_time = time()
 
     docker = Docker()
-    container = await docker.containers.run({
+    try:
+        existing_container = await docker.containers.get("kkp-test-mariadb")
+    except DockerError as e:
+        if e.status != 404:
+            raise
+    else:
+        await existing_container.delete(force=True)
+
+    container = await docker.containers.run(name="kkp-test-mariadb", config={
         "Image": "mariadb:10.6",
         "Env": [
             f"MARIADB_ROOT_PASSWORD={MARIADB_PASS}",
