@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Header, Depends
 
-from kkp.models import Session, User, UserRole, Animal
+from kkp.models import Session, User, UserRole, Animal, AnimalReport
 from kkp.utils.custom_exception import CustomMessageException
 
 
@@ -71,3 +71,13 @@ async def admin_animal_dep(_: JwtAuthAdminDep, animal: AnimalDep) -> Animal:
 
 
 AdminAnimalDep = Annotated[Animal, Depends(admin_animal_dep)]
+
+
+async def animal_report_dep(report_id: int) -> AnimalReport:
+    if (report := await AnimalReport.get_or_none(id=report_id)) is None:
+        raise CustomMessageException("Unknown report.", 404)
+
+    return report
+
+
+AnimalReportDep = Annotated[AnimalReport, Depends(animal_report_dep)]

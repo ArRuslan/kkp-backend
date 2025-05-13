@@ -17,6 +17,10 @@ class AnimalReport(Model):
     media: fields.ManyToManyRelation[models.Media] = fields.ManyToManyField("models.Media")
     location: models.GeoPoint = fields.ForeignKeyField("models.GeoPoint")
 
+    reported_by: int | None
+    assigned_to: int | None
+    location: int
+
     async def to_json(self) -> dict:
         to_fetch = []
         if self.reported_by is not None:
