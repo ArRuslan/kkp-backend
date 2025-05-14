@@ -74,7 +74,7 @@ AdminAnimalDep = Annotated[Animal, Depends(admin_animal_dep)]
 
 
 async def animal_report_dep(report_id: int) -> AnimalReport:
-    if (report := await AnimalReport.get_or_none(id=report_id)) is None:
+    if (report := await AnimalReport.get_or_none(id=report_id).select_related("assigned_to")) is None:
         raise CustomMessageException("Unknown report.", 404)
 
     return report

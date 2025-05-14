@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import struct
+from typing import Any
 
 from pypika_tortoise import CustomFunction
 from tortoise import fields
 from tortoise.exceptions import FieldError
-from tortoise.expressions import Function
+from tortoise.expressions import Function, CombinedExpression, F
 
 
 class Point:
@@ -61,4 +62,12 @@ class PointField(fields.Field[Point]):
 
 
 class STDistanceSphere(Function):
-    database_func = CustomFunction("ST_Distance_Sphere", ["col", "point"])
+    database_func = CustomFunction("ST_Distance_Sphere", ["point_a", "point_b"])
+
+    def __init__(self, point_a: str | Point, point_b: str | Point) -> None:
+        if isinstance(point_a, Point):
+            point_a = point_a.to_sql_wkb_bin()
+        if isinstance(point_b, Point):
+            point_b = point_b.to_sql_wkb_bin()
+
+        super().__init__(point_a, point_b)

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pytz import UTC
 
 from kkp.db.point import Point, STDistanceSphere
@@ -38,6 +38,24 @@ async def create_animal_report(user: JwtAuthUserDep, data: CreateAnimalReportsRe
     return await report.to_json()
 
 
+@router.get("/recent", response_model=PaginationResponse[AnimalReportInfo], dependencies=[JwtAuthVetDepN])
+async def get_recent_unassigned_reports(query: RecentReportsQuery = Query()):
+    radius = min(max(query.radius, 100), 10000)
+    db_query = AnimalReport.filter(created_at__gt=datetime.now(UTC) - timedelta(hours=12), assigned_to=None) \
+        .select_related("reported_by", "assigned_to", "animal", "location")\
+        .annotate(dist=STDistanceSphere("location__point", Point(query.lon, query.lat))) \
+        .filter(dist__lt=radius) \
+        .order_by("-id")
+
+    return {
+        "count": await db_query.count(),
+        "result": [
+            await report.to_json()
+            for report in await db_query.limit(query.page_size).offset(query.page_size * (query.page - 1))
+        ],
+    }
+
+
 @router.get("/{report_id}", response_model=AnimalReportInfo)
 async def get_animal_report(user: JwtAuthUserDep, report: AnimalReportDep):
     if user.role <= UserRole.REGULAR and report.reported_by_id != user.id:
@@ -55,21 +73,3 @@ async def assign_animal_report_to_user(user: JwtAuthVetDep, report: AnimalReport
     await report.save(update_fields=["assigned_to_id"])
 
     return await report.to_json()
-
-
-@router.get("/recent", response_model=PaginationResponse[AnimalReportInfo], dependencies=[JwtAuthVetDepN])
-async def get_recent_unassigned_reports(query: RecentReportsQuery):
-    radius = min(max(query.radius, 100), 10000)
-    db_query = AnimalReport.filter(created_at__gt=datetime.now(UTC) - timedelta(hours=12), assigned_to=None) \
-        .select_related("reported_by", "assigned_to", "animal", "location")\
-        .annotate(dist=STDistanceSphere("location__point", Point(query.lon, query.lat))) \
-        .filter(dist__lt=radius) \
-        .order_by("-id")
-
-    return {
-        "count": await db_query.count(),
-        "result": [
-            await report.to_json()
-            for report in await db_query.limit(query.page_size).offset(query.page_size * (query.page - 1))
-        ],
-    }

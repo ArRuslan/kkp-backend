@@ -86,6 +86,9 @@ app.include_router(treatment_reports.router)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(_, exc: RequestValidationError) -> JSONResponse:
+    import traceback
+    print(traceback.format_exc())
+
     result = []
     for err in exc.errors():
         loc = ".".join([str(l) for l in err["loc"][1:]])
