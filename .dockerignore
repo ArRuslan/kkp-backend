@@ -3,3 +3,5 @@
 **/*.db
 **/*.db-*
 **/.env
+**/coverage.xml
+**/coverage.coverage

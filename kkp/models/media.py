@@ -29,7 +29,7 @@ class Media(Model):
     media_id: UUID | None = fields.UUIDField(null=True, default=None)
 
     def upload_url(self, ttl: int = 60 * 60) -> str:
-        return S3_PUBLIC.share(config.s3_bucket, self.object_key(), ttl, True)
+        return S3_PUBLIC.share(config.s3_bucket_name, self.object_key(), ttl, True)
 
     def object_key(self) -> str:
         return f"{MediaType.PHOTO.name.lower()}s/{self.media_id}"
@@ -39,5 +39,5 @@ class Media(Model):
             "id": self.id,
             "uploaded_at": int(self.uploaded_at.timestamp()),
             "type": self.type,
-            "url": S3_PUBLIC.share(config.s3_bucket, self.object_key()),
+            "url": S3_PUBLIC.share(config.s3_bucket_name, self.object_key()),
         }

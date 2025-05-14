@@ -11,6 +11,7 @@ from kkp import models
 class UserRole(IntEnum):
     REGULAR = 0
     VET = 10
+    VOLUNTEER = 11
     VET_ADMIN = 100
     GLOBAL_ADMIN = 999
 

@@ -4,6 +4,7 @@ from pathlib import Path
 from aerich import Command
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from httpx import RemoteProtocolError
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from tortoise import Tortoise, generate_config
@@ -31,15 +32,25 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
             await command.init_db(True)
         await Tortoise.close_connections()
 
-    await S3.put_bucket_policy(config.s3_bucket_name, {
-        "Version": "2012-10-17",
-        "Statement": [{
-            "Effect": "Allow",
-            "Principal": {"AWS": ["*"]},
-            "Action": ["s3:GetObject"],
-            "Resource": [f"arn:aws:s3:::{config.s3_bucket_name}/*"]
-        }]
-    })
+    policy_retries = 3
+    for i in range(policy_retries):
+        try:
+            await S3.put_bucket_policy(config.s3_bucket_name, {
+                "Version": "2012-10-17",
+                "Statement": [{
+                    "Effect": "Allow",
+                    "Principal": {"AWS": ["*"]},
+                    "Action": ["s3:GetObject"],
+                    "Resource": [f"arn:aws:s3:::{config.s3_bucket_name}/*"]
+                }]
+            })
+            break
+        except RemoteProtocolError:
+            if i == policy_retries - 1:
+                raise
+
+            from asyncio import sleep
+            await sleep(1)
 
     from os import environ
 
