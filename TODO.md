@@ -2,7 +2,7 @@ TODO:
   - [x] User profile
   - [x] Animal reports (when animal is found) creation
   - [ ] Send notification to volunteers and vets when animal report is created
-  - [ ] Recent near reports viewing for volunteers and vets
+  - [x] Recent near reports viewing for volunteers and vets
   - [ ] Recently updated animals viewing for all users - ???
   - [x] Auth via google
   - [x] Two-factor authentication

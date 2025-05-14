@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from kkp.schemas.animals import AnimalInfo
-from kkp.schemas.common import GeoPointInfo
+from kkp.schemas.common import GeoPointInfo, PaginationQuery
 from kkp.schemas.media import MediaInfo
 from kkp.schemas.users import UserBaseInfo
 
@@ -26,3 +26,9 @@ class AnimalReportInfo(BaseModel):
     notes: str
     media: list[MediaInfo]
     location: GeoPointInfo
+
+
+class RecentReportsQuery(PaginationQuery):
+    lat: float
+    lon: float
+    radius: int = 5000

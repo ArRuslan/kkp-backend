@@ -1,9 +1,13 @@
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter
+from pytz import UTC
 
 from kkp.db.point import Point, STDistanceSphere
-from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, AnimalReportDep
+from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, AnimalReportDep, JwtAuthVetDepN
 from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, UserRole
-from kkp.schemas.animal_reports import CreateAnimalReportsRequest, AnimalReportInfo
+from kkp.schemas.animal_reports import CreateAnimalReportsRequest, AnimalReportInfo, RecentReportsQuery
+from kkp.schemas.common import PaginationResponse
 from kkp.utils.custom_exception import CustomMessageException
 
 router = APIRouter(prefix="/animal-reports")
@@ -51,3 +55,21 @@ async def assign_animal_report_to_user(user: JwtAuthVetDep, report: AnimalReport
     await report.save(update_fields=["assigned_to_id"])
 
     return await report.to_json()
+
+
+@router.get("/recent", response_model=PaginationResponse[AnimalReportInfo], dependencies=[JwtAuthVetDepN])
+async def get_recent_unassigned_reports(query: RecentReportsQuery):
+    radius = min(max(query.radius, 100), 10000)
+    db_query = AnimalReport.filter(created_at__gt=datetime.now(UTC) - timedelta(hours=12), assigned_to=None) \
+        .select_related("reported_by", "assigned_to", "animal", "location")\
+        .annotate(dist=STDistanceSphere("location__point", Point(query.lon, query.lat))) \
+        .filter(dist__lt=radius) \
+        .order_by("-id")
+
+    return {
+        "count": await db_query.count(),
+        "result": [
+            await report.to_json()
+            for report in await db_query.limit(query.page_size).offset(query.page_size * (query.page - 1))
+        ],
+    }

@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from fastapi import APIRouter
+from pytz import UTC
 
 from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, TreatmentReportDep
 from kkp.models import AnimalReport, UserRole, TreatmentReport
@@ -10,7 +13,8 @@ router = APIRouter(prefix="/treatment-reports")
 
 @router.post("", response_model=TreatmentReportInfo)
 async def create_treatment_report(user: JwtAuthVetDep, data: CreateTreatmentReportRequest):
-    if (report := await AnimalReport.get_or_none(id=data.animal_report_id).select_related("assigned_to")) is None:
+    report_related = ("assigned_to", "animal",)
+    if (report := await AnimalReport.get_or_none(id=data.animal_report_id).select_related(*report_related)) is None:
         raise CustomMessageException("Unknown report.", 404)
     if report.assigned_to != user:
         raise CustomMessageException("This report was assigned to different user.", 400)
@@ -18,6 +22,8 @@ async def create_treatment_report(user: JwtAuthVetDep, data: CreateTreatmentRepo
     treatment_report = await TreatmentReport.create(
         report=report, description=data.description, money_spent=data.money_spent,
     )
+    report.animal.updated_at = datetime.now(UTC)
+    await report.animal.save(update_fields=["updated_at"])
 
     return await treatment_report.to_json()
 
