@@ -21,8 +21,8 @@ TODO:
   - [ ] Near vet clinics search
   - [ ] Password reset
   - [ ] Donations (mastercard donate api?)
-  - [ ] Treatment reports creating
-  - [ ] Treatment reports viewing
+  - [x] Treatment reports creating
+  - [x] Treatment reports viewing
   - [ ] Volunteer requests creation
   - [ ] Volunteer requests viewing (only for global admins)
   - [ ] Volunteer requests approval/refusal (with notification and/or email sending)
