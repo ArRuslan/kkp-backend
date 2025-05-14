@@ -49,3 +49,12 @@ class GoogleAuthUrlData(BaseModel):
 class ConnectGoogleData(LoginResponse):
     token: str | None
     connect: bool
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class RealResetPasswordRequest(BaseModel):
+    reset_token: str
+    new_password: str

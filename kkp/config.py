@@ -18,6 +18,7 @@ class _Config(BaseSettings):
     redis_connection_string: RedisDsn = "redis://127.0.0.1:6379"
     fcm_config_path: Path = "fcm_config.json"
     bcrypt_rounds: int = 12
+    public_host: str = "http://127.0.0.1:8080"
 
     max_photo_size: int = 8 * 1024 * 1024
     max_video_size: int = 64 * 1024 * 104

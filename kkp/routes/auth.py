@@ -1,3 +1,4 @@
+from email.message import EmailMessage
 from os import urandom
 from time import time
 
@@ -5,11 +6,12 @@ import bcrypt
 from fastapi import APIRouter
 from starlette.responses import JSONResponse
 
-from kkp.config import config
+from kkp.config import config, SMTP
 from kkp.dependencies import JwtSessionDep, JwtAuthUserDep
 from kkp.models import User, Session, ExternalAuth, ExtAuthType
 from kkp.schemas.auth import RegisterResponse, RegisterRequest, LoginResponse, LoginRequest, MfaResponse, \
-    MfaVerifyRequest, GoogleAuthUrlData, ConnectGoogleData, GoogleOAuthData
+    MfaVerifyRequest, GoogleAuthUrlData, ConnectGoogleData, GoogleOAuthData, ResetPasswordRequest, \
+    RealResetPasswordRequest
 from kkp.utils.custom_exception import CustomMessageException
 from kkp.utils.google_oauth import authorize_google
 from kkp.utils.jwt import JWT
@@ -176,3 +178,35 @@ async def google_auth_callback(data: GoogleOAuthData):
         "token": session.to_jwt(),
         "expires_at": int(time() + config.jwt_ttl),
     }
+
+
+@router.post("/reset-password/request", status_code=204)
+async def request_reset_password(data: ResetPasswordRequest):
+    if (user := await User.get_or_none(email=data.email)) is None:
+        return
+
+    if config.SMTP_PORT <= 0:
+        raise CustomMessageException("Smtp is not configured!")
+
+    reset_token = JWT.encode({"u": user.id, "type": "password-reset"}, config.JWT_KEY, expires_in=60 * 30)
+
+    message = EmailMessage()
+    message["From"] = "kkp@example.com"
+    message["To"] = user.email
+    message["Subject"] = "Password reset"
+    message.set_content(
+        f"Click the following link to reset your password: "
+        f"{config.public_host}/reset-password?reset_token={reset_token}"
+    )
+    await SMTP.send(message, timeout=5)
+
+
+@router.post("/reset-password/reset", status_code=204)
+async def reset_password(data: RealResetPasswordRequest):
+    if (payload := JWT.decode(data.reset_token, config.JWT_KEY)) is None or payload.get("type") != "password-reset":
+        raise CustomMessageException("Password reset request is invalid!")
+    if (user := await User.get_or_none(id=payload["u"])) is None:
+        raise CustomMessageException("User not found!")
+
+    user.password = bcrypt.hashpw(data.new_password.encode("utf8"), bcrypt.gensalt(config.BCRYPT_ROUNDS)).decode("utf8")
+    await user.save(update_fields=["password"])

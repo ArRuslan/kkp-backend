@@ -19,7 +19,7 @@ TODO:
   - [ ] Vet admins assigning by global admins
   - [ ] Vets assigning by vet admins
   - [ ] Near vet clinics search
-  - [ ] Password reset
+  - [x] Password reset
   - [ ] Donations (mastercard donate api?)
   - [x] Treatment reports creating
   - [x] Treatment reports viewing
