@@ -8,7 +8,7 @@ from kkp.db.point import Point, PointField
 
 class GeoPoint(Model):
     id: int = fields.BigIntField(pk=True)
-    name: str | None = fields.CharField(max_length=128)
+    name: str | None = fields.CharField(max_length=128, null=True)
     latitude: float = fields.FloatField()
     longitude: float = fields.FloatField()
     point: Point = PointField()

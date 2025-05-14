@@ -42,7 +42,7 @@ class Animal(Model):
             "description": self.description,
             "media": {
                 "count": total_media_count,
-                "items": [
+                "result": [
                     media.to_json()
                     for media in medias
                 ]

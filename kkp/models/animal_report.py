@@ -37,10 +37,10 @@ class AnimalReport(Model):
 
         return {
             "id": self.id,
-            "reported_by": self.reported_by.to_json() if self.reported_by is not None else None,
+            "reported_by": await self.reported_by.to_json() if self.reported_by is not None else None,
             "animal": await self.animal.to_json(),
             "created_at": int(self.created_at.timestamp()),
-            "assigned_to": self.assigned_to.to_json() if self.assigned_to is not None else None,
+            "assigned_to": await self.assigned_to.to_json() if self.assigned_to is not None else None,
             "notes": self.notes,
             "media": [
                 media.to_json()

@@ -29,7 +29,7 @@ async def create_animal_report(user: JwtAuthUserDep, data: CreateAnimalReportsRe
     animal = await Animal.create(
         name=data.name, breed=data.breed, status=AnimalStatus.FOUND, current_location=location,
     )
-    report = await AnimalReport.create(reported_by=user, animal=animal, notes=data.notes)
+    report = await AnimalReport.create(reported_by=user, animal=animal, notes=data.notes, location=location)
     media = await Media.filter(id__in=data.media_ids, uploaded_by=user)
     await report.media.add(*media)
 

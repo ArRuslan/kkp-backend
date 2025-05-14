@@ -18,10 +18,14 @@ MARIADB_USER = "kkp"
 MARIADB_PASS = "123456789"
 MARIADB_DB = "kkp"
 
+SMTP_PORT = 55003
+MAILCATCHER_PORT = 55004
+
 environ["s3_endpoint"] = MINIO_ENDPOINT
 environ["s3_access_key_id"] = MINIO_CRED
 environ["s3_access_secret_key"] = MINIO_CRED
 environ["db_connection_string"] = f"mysql://root:{MARIADB_PASS}@127.0.0.1:{MARIADB_PORT}/{MARIADB_DB}_{{}}"
+environ["smtp_port"] = str(SMTP_PORT)
 environ["TORTOISE_TESTING"] = "1"
 
 from kkp.main import app
@@ -166,6 +170,49 @@ async def run_mariadb_in_docker():
             break
 
     print(f"Mariadb container is ready in {time() - start_time:.2f} seconds")
+
+    yield
+
+    await container.delete(force=True)
+    await docker.close()
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def run_mailcatcher_in_docker():
+    print("Starting mailcatcher container...")
+    start_time = time()
+
+    docker = Docker()
+    try:
+        existing_container = await docker.containers.get("kkp-test-mailcatcher")
+    except DockerError as e:
+        if e.status != 404:
+            raise
+    else:
+        await existing_container.delete(force=True)
+
+    container = await docker.containers.run(name="kkp-test-mailcatcher", config={
+        "Image": "schickling/mailcatcher:latest",
+        "HostConfig": {
+            "AutoRemove": True,
+            "Memory": 64 * 1024 * 1024,
+            "PortBindings": {
+                "1025/tcp": [{"HostPort": f"{SMTP_PORT}"}],
+                "1080/tcp": [{"HostPort": f"{MAILCATCHER_PORT}"}],
+            }
+        },
+    })
+
+    async with AsyncClient() as cl:
+        while True:
+            try:
+                resp = await cl.head(f"http://127.0.0.1:{MAILCATCHER_PORT}/messages")
+            except RemoteProtocolError:
+                continue
+            if resp.status_code == 200:
+                break
+
+    print(f"Mailcatcher container is ready in {time() - start_time:.2f} seconds")
 
     yield
 
