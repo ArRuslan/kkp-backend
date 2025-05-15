@@ -29,6 +29,6 @@ class Message(Model):
             "dialog": await self.dialog.to_json(current_user),
             "author": await self.author.to_json_base(),
             "text": self.text,
-            "media": self.media.to_json(),
+            "media": self.media.to_json() if self.media is not None else None,
             "date": int(self.date.timestamp()),
         }

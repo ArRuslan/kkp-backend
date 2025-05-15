@@ -12,7 +12,7 @@ from kkp.utils.custom_exception import CustomMessageException
 router = APIRouter(prefix="/messages")
 
 
-@router.post("", response_model=PaginationResponse[DialogInfo])
+@router.get("", response_model=PaginationResponse[DialogInfo])
 async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
     dialogs_q = Dialog.filter(Q(to_user=user) | Q(from_user=user))
 
@@ -27,16 +27,18 @@ async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
     }
 
 
-def make_dialog_q(this_user_id: int, other_user_id: int) -> Q:
+def make_dialog_q(this_user_id: int, other_user_id: int, prefix: str = "") -> Q:
+    to_user_q = f"{prefix}__to_user__id" if prefix else "to_user__id"
+    from_user_q = f"{prefix}__from_user__id" if prefix else "from_user__id"
     return Q(
-        Q(dialog__to_user__id=this_user_id) & Q(dialog__from_user__id=other_user_id)
-        | Q(dialog__to_user__id=other_user_id) & Q(dialog__from_user__id=this_user_id)
+        Q(**{to_user_q: this_user_id}) & Q(**{from_user_q: other_user_id})
+        | Q(**{to_user_q: other_user_id}) & Q(**{from_user_q: this_user_id})
     )
 
 
 @router.get("/{user_id}", response_model=PaginationResponse[MessageInfo])
 async def get_messages(user_id: int, user: JwtAuthUserDep, query: MessagePaginationQuery = Query()):
-    dialog_q = make_dialog_q(user.id, user_id)
+    dialog_q = make_dialog_q(user.id, user_id, "dialog")
 
     offset_q = Q()
     if query.before_date is not None:
