@@ -18,7 +18,7 @@ TODO:
   - [ ] Admin CRUD (but without creation) for messages ?
   - [x] Vet admins assigning by global admins
   - [x] Vets assigning by vet admins
-  - [ ] Near vet clinics search
+  - [x] Near vet clinics search
   - [x] Password reset
   - [ ] Donations (mastercard donate api?)
   - [x] Treatment reports creating
