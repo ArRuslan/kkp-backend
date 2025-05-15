@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from tortoise.expressions import Q
 
 from kkp.dependencies import JwtAuthUserDep
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/messages")
 
 
 @router.post("", response_model=PaginationResponse[DialogInfo])
-async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery):
+async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
     dialogs_q = Dialog.filter(Q(to_user=user) | Q(from_user=user))
 
     return {
@@ -35,7 +35,7 @@ def make_dialog_q(this_user_id: int, other_user_id: int) -> Q:
 
 
 @router.get("/{user_id}", response_model=PaginationResponse[MessageInfo])
-async def get_messages(user_id: int, user: JwtAuthUserDep, query: MessagePaginationQuery):
+async def get_messages(user_id: int, user: JwtAuthUserDep, query: MessagePaginationQuery = Query()):
     dialog_q = make_dialog_q(user.id, user_id)
 
     offset_q = Q()

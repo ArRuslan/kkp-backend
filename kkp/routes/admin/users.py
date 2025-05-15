@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from kkp.dependencies import JwtAuthAdminDepN, AdminUserDep
 from kkp.models import Media, User, UserProfilePhoto
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/users", dependencies=[JwtAuthAdminDepN])
 
 
 @router.get("", response_model=PaginationResponse[UserInfo])
-async def get_users(query: PaginationQuery):
+async def get_users(query: PaginationQuery = Query()):
     return {
         "count": await User.all().count(),
         "result": [

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from kkp.dependencies import JwtAuthUserDep, AnimalDep
 from kkp.schemas.animals import AnimalInfo
@@ -8,7 +8,7 @@ router = APIRouter(prefix="/subscriptions")
 
 
 @router.get("", response_model=PaginationResponse[AnimalInfo])
-async def get_user_subscriptions(user: JwtAuthUserDep, query: PaginationQuery):
+async def get_user_subscriptions(user: JwtAuthUserDep, query: PaginationQuery = Query()):
     return {
         "count": await user.subscriptions.all().count(),
         "result": [

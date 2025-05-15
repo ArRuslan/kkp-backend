@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pytz import UTC
 
 from kkp.dependencies import JwtAuthAdminDepN, AdminAnimalDep
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/animals", dependencies=[JwtAuthAdminDepN])
 
 
 @router.get("", response_model=PaginationResponse[AnimalInfo])
-async def get_animals(query: PaginationQuery):
+async def get_animals(query: PaginationQuery = Query()):
     return {
         "count": await Animal.all().count(),
         "result": [
