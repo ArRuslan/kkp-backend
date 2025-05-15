@@ -25,6 +25,22 @@ psycopg = ["psycopg[binary,pool] (>=3.0.12,<4.0.0)"]
 toml = ["tomli-w (>=1.1.0,<2.0.0)", "tomlkit (>=0.11.4,<1.0.0)"]
 
 [[package]]
+name = "aiocache"
+version = "0.12.3"
+description = "multi backend asyncio cache"
+optional = false
+python-versions = "*"
+files = [
+    {file = "aiocache-0.12.3-py2.py3-none-any.whl", hash = "sha256:889086fc24710f431937b87ad3720a289f7fc31c4fd8b68e9f918b9bacd8270d"},
+    {file = "aiocache-0.12.3.tar.gz", hash = "sha256:f528b27bf4d436b497a1d0d1a8f59a542c153ab1e37c3621713cb376d44c4713"},
+]
+
+[package.extras]
+memcached = ["aiomcache (>=0.5.2)"]
+msgpack = ["msgpack (>=0.5.5)"]
+redis = ["redis (>=4.2.0)"]
+
+[[package]]
 name = "aiodocker"
 version = "0.24.0"
 description = "A simple Docker HTTP API wrapper written with asyncio and aiohttp."
@@ -1930,4 +1946,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "25e6afd595044842cce504d55610c016d132346ee25aade51226cccb3bd357b7"
+content-hash = "aa1f1688d5d6622ac7e07af4bfe0f6bedb4ca6b26bdbd2ae5810a56802e7344b"

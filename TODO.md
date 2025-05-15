@@ -12,7 +12,8 @@ TODO:
   - [x] CRUD for vet clinics
   - [x] Admin CRUD (but without creation) for users
   - [x] Admin CRUD (but without creation) for animals
-  - [ ] Admin CRUD (but without creation) for animal reports
+  - [x] Admin CRUD (but without creation) for animal reports
+  - [ ] Admin CRUD (but without creation) for treatment reports
   - [ ] Admin CRUD (but without creation) for media ?
   - [ ] Admin CRUD (but without creation) for dialogs ?
   - [ ] Admin CRUD (but without creation) for messages ?
