@@ -15,6 +15,8 @@ class EditVetClinicRequest(BaseModel):
     name: str | None = None
     latitude: float | None = None
     longitude: float | None = None
+    # Only for global admins; 0 to remove admin
+    admin_id: int | None = None
 
 
 class EditEmployeeRequest(BaseModel):

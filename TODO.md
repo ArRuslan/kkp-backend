@@ -16,7 +16,7 @@ TODO:
   - [ ] Admin CRUD (but without creation) for media ?
   - [ ] Admin CRUD (but without creation) for dialogs ?
   - [ ] Admin CRUD (but without creation) for messages ?
-  - [ ] Vet admins assigning by global admins
+  - [x] Vet admins assigning by global admins
   - [x] Vets assigning by vet admins
   - [ ] Near vet clinics search
   - [x] Password reset

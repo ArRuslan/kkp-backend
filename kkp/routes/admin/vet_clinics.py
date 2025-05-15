@@ -61,13 +61,21 @@ async def edit_vet_clinic(user: JwtAuthVetAdminDep, clinic: AdminVetClinicDep, d
     if data.name is not None:
         clinic.name = data.name
         to_update.append("name")
+    if user.role == UserRole.GLOBAL_ADMIN and data.admin_id is not None:
+        if data.admin_id > 0:
+            if clinic.admin is not None:
+                clinic.admin = None
+                to_update.append("admin_id")
+        else:
+            if (new_admin := await User.get_or_none(id=data.admin_id)) is None:
+                raise CustomMessageException("Unknown user.", 404)
+            clinic.admin = new_admin
+            to_update.append("admin_id")
     if data.latitude is not None and data.longitude is not None:
         clinic.location.name = None
         await clinic.location.save(update_fields=["name"])
         clinic.location = await GeoPoint.create(name=clinic.name, latitude=data.latitude, longitude=data.longitude)
         to_update.append("location_id")
-
-    # TODO: allow editing admin (only for global admins)
 
     if to_update:
         await clinic.save(update_fields=to_update)
