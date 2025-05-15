@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Header, Depends
 
-from kkp.models import Session, User, UserRole, Animal, AnimalReport, TreatmentReport
+from kkp.models import Session, User, UserRole, Animal, AnimalReport, TreatmentReport, VetClinic
 from kkp.utils.custom_exception import CustomMessageException
 
 
@@ -91,3 +91,13 @@ async def treatment_report_dep(treatment_report_id: int) -> TreatmentReport:
 
 
 TreatmentReportDep = Annotated[TreatmentReport, Depends(treatment_report_dep)]
+
+
+async def admin_vet_clinic_dep(vet_clinic_id: int, _: JwtAuthVetAdminDep) -> VetClinic:
+    if (clinic := await VetClinic.get_or_none(id=vet_clinic_id).select_related("admin")) is None:
+        raise CustomMessageException("Unknown vet clinic.", 404)
+
+    return clinic
+
+
+AdminVetClinicDep = Annotated[VetClinic, Depends(admin_vet_clinic_dep)]

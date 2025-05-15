@@ -9,7 +9,7 @@ TODO:
   - [x] Specific animal reports viewing
   - [x] Specific animal treatment reports viewing
   - [x] Subscribing to animals
-  - [ ] CRUD for vet clinics
+  - [x] CRUD for vet clinics
   - [x] Admin CRUD (but without creation) for users
   - [x] Admin CRUD (but without creation) for animals
   - [ ] Admin CRUD (but without creation) for animal reports
@@ -17,7 +17,7 @@ TODO:
   - [ ] Admin CRUD (but without creation) for dialogs ?
   - [ ] Admin CRUD (but without creation) for messages ?
   - [ ] Vet admins assigning by global admins
-  - [ ] Vets assigning by vet admins
+  - [x] Vets assigning by vet admins
   - [ ] Near vet clinics search
   - [x] Password reset
   - [ ] Donations (mastercard donate api?)

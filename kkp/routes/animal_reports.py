@@ -15,15 +15,9 @@ router = APIRouter(prefix="/animal-reports")
 
 @router.post("", response_model=AnimalReportInfo)
 async def create_animal_report(user: JwtAuthUserDep, data: CreateAnimalReportsRequest):
-    location = await GeoPoint\
-        .annotate(dist=STDistanceSphere("point", Point(data.longitude, data.latitude)))\
-        .filter(dist__lt=100)\
-        .order_by("dist")\
-        .first()
+    location = await GeoPoint.get_near(data.latitude, data.longitude)
     if location is None:
-        location = await GeoPoint.create(
-            name=None, latitude=data.latitude, longitude=data.longitude, point=Point(data.longitude, data.latitude),
-        )
+        location = await GeoPoint.create(name=None, latitude=data.latitude, longitude=data.longitude)
 
     # TODO: handle already existing animals
     animal = await Animal.create(
