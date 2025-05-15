@@ -12,7 +12,7 @@ from tortoise.contrib.fastapi import RegisterTortoise
 
 from .config import config, S3
 from .routes import auth, animals, media, users, subscriptions, animal_reports, admin, messages, treatment_reports, \
-    vet_clinics
+    vet_clinics, volunteer_requests
 from .utils.custom_exception import CustomMessageException
 
 
@@ -95,13 +95,11 @@ app.include_router(animal_reports.router)
 app.include_router(messages.router)
 app.include_router(treatment_reports.router)
 app.include_router(vet_clinics.router)
+app.include_router(volunteer_requests.router)
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(_, exc: RequestValidationError) -> JSONResponse:
-    import traceback
-    print(traceback.format_exc())
-
     result = []
     for err in exc.errors():
         loc = ".".join([str(l) for l in err["loc"][1:]])

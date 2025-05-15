@@ -23,9 +23,9 @@ TODO:
   - [ ] Donations (mastercard donate api?)
   - [x] Treatment reports creating
   - [x] Treatment reports viewing
-  - [ ] Volunteer requests creation
-  - [ ] Volunteer requests viewing (only for global admins)
-  - [ ] Volunteer requests approval/refusal (with notification and/or email sending)
+  - [x] Volunteer requests creation
+  - [x] Volunteer requests viewing (only for global admins)
+  - [x] Volunteer requests approval/refusal (with notification and/or email sending)
   - [x] Dialogs creation
   - [x] Dialogs viewing
   - [x] Messages creation
@@ -35,3 +35,4 @@ TODO:
   - [ ] Messages editing - ?
   - [ ] Messages deleting
   - [ ] FAQs ??
+  - [ ] Caching
