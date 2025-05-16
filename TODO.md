@@ -14,7 +14,7 @@ TODO:
   - [x] Admin CRUD (but without creation) for animals
   - [x] Admin CRUD (but without creation) for animal reports
   - [x] Admin CRUD (but without creation) for treatment reports
-  - [ ] Admin CRUD (but without creation) for media ?
+  - [x] Admin CRUD (but without creation) for media ?
   - [ ] Admin CRUD (but without creation) for dialogs ?
   - [ ] Admin CRUD (but without creation) for messages ?
   - [x] Vet admins assigning by global admins

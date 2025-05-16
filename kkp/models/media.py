@@ -32,7 +32,7 @@ class Media(Model):
         return S3_PUBLIC.share(config.s3_bucket_name, self.object_key(), ttl, True)
 
     def object_key(self) -> str:
-        return f"{MediaType.PHOTO.name.lower()}s/{self.media_id}"
+        return f"{self.type.name.lower()}s/{self.media_id}"
 
     def to_json(self) -> dict:
         return {

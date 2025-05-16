@@ -2,7 +2,8 @@ from typing import Annotated
 
 from fastapi import Header, Depends
 
-from kkp.models import Session, User, UserRole, Animal, AnimalReport, TreatmentReport, VetClinic, VolunteerRequest
+from kkp.models import Session, User, UserRole, Animal, AnimalReport, TreatmentReport, VetClinic, VolunteerRequest, \
+    Media
 from kkp.utils.custom_exception import CustomMessageException
 
 
@@ -117,3 +118,13 @@ async def admin_treatment_dep(_: JwtAuthAdminDep, report: TreatmentReportDep) ->
 
 
 AdminTreatmentReportDep = Annotated[TreatmentReport, Depends(admin_treatment_dep)]
+
+
+async def admin_media_dep(_: JwtAuthAdminDep, media_id: int) -> Media:
+    if (media := await Media.get_or_none(id=media_id)) is None:
+        raise CustomMessageException("Unknown media.", 404)
+
+    return media
+
+
+AdminMediaDep = Annotated[Media, Depends(admin_media_dep)]

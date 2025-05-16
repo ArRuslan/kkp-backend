@@ -2,7 +2,6 @@ from fastapi import APIRouter, Query
 
 from kkp.dependencies import JwtAuthAdminDepN, AdminTreatmentReportDep
 from kkp.models import TreatmentReport
-from kkp.schemas.animal_reports import AnimalReportInfo
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 from kkp.schemas.treatment_reports import TreatmentReportInfo
 
@@ -22,7 +21,7 @@ async def get_treatment_reports(query: PaginationQuery = Query()):
     }
 
 
-@router.get("/{treatment_report_id}", response_model=AnimalReportInfo)
+@router.get("/{treatment_report_id}", response_model=TreatmentReportInfo)
 async def get_treatment_report(report: AdminTreatmentReportDep):
     return await report.to_json()
 
