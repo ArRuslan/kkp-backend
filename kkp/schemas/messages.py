@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from kkp.schemas.media import MediaInfo
 from kkp.schemas.users import UserBaseInfo
@@ -29,3 +29,28 @@ class MessageInfo(BaseModel):
     text: str
     media: MediaInfo | None
     date: int
+
+
+class GetLastMessagesRequest(BaseModel):
+    dialog_ids: list[int] = Field(max_length=100)
+
+
+class GetNewMessagesQuery(BaseModel):
+    last_known_id: int
+    chunk: int
+    new_id: int = 0
+
+
+class NewMessage(BaseModel):
+    id: int
+    dialog_id: int
+    author_id: int
+    text: str
+    media: MediaInfo | None
+    date: int
+
+
+class NewMessagesResponse(BaseModel):
+    total: int
+    chunk: list[NewMessage]
+    new_id: int

@@ -13,7 +13,7 @@ TODO:
   - [x] Admin CRUD (but without creation) for users
   - [x] Admin CRUD (but without creation) for animals
   - [x] Admin CRUD (but without creation) for animal reports
-  - [ ] Admin CRUD (but without creation) for treatment reports
+  - [x] Admin CRUD (but without creation) for treatment reports
   - [ ] Admin CRUD (but without creation) for media ?
   - [ ] Admin CRUD (but without creation) for dialogs ?
   - [ ] Admin CRUD (but without creation) for messages ?
@@ -31,9 +31,9 @@ TODO:
   - [x] Dialogs viewing
   - [x] Messages creation
   - [x] Messages viewing
-  - [ ] Sending messages via websocket
+  - [ ] Sending messages via websocket ?
   - [ ] Sending messages notifications
   - [ ] Messages editing - ?
-  - [ ] Messages deleting
+  - [ ] Messages deleting - ?
   - [ ] FAQs ??
   - [ ] Caching

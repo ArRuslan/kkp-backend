@@ -1,17 +1,21 @@
 from datetime import datetime, UTC
 
 from fastapi import APIRouter, Query
-from tortoise.expressions import Q
+from tortoise.expressions import Q, Subquery
+from tortoise.functions import Max
 
 from kkp.dependencies import JwtAuthUserDep
 from kkp.models import Dialog, Message, User, Media
 from kkp.schemas.common import PaginationResponse, PaginationQuery
-from kkp.schemas.messages import DialogInfo, CreateMessageRequest, MessageInfo, MessagePaginationQuery
+from kkp.schemas.messages import DialogInfo, CreateMessageRequest, MessageInfo, MessagePaginationQuery, \
+    GetLastMessagesRequest, NewMessagesResponse, GetNewMessagesQuery
 from kkp.utils.custom_exception import CustomMessageException
 
 router = APIRouter(prefix="/messages")
 
 
+# TODO: return dialogs ordered by last message time
+# TODO: dont use pages, better use offsets, e.g. last message id offset
 @router.get("", response_model=PaginationResponse[DialogInfo])
 async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
     dialogs_q = Dialog.filter(Q(to_user=user) | Q(from_user=user))
@@ -25,6 +29,43 @@ async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
                 .offset(query.page_size * (query.page - 1))
         ],
     }
+
+
+# Note to myself: idk about that, maybe whole messages routes system needs rewrite.
+#  Current implementation is good for just getting dialogs and messages.
+#  But my biggest concern is processing new messages on clients, when they already have some messages,
+#  for example if client does not have any messages, it just calls /messages (if on "dialogs" screen),
+#  then /messages/last-messages, and if "dialog messages" screen is opened, it calls /messages/{user_id}
+#  with specific offsets (e.g. before_id)
+@router.post("/last-messages", response_model=dict[int, MessageInfo])
+async def get_last_messages(user: JwtAuthUserDep, data: GetLastMessagesRequest):
+    dialog_q = Q(dialog__to_user=user) | Q(dialog__from_user=user)
+
+    messages = await Message.filter(id__in=Subquery(
+        Message
+        .filter(dialog_q & Q(dialog__id__in=data.dialog_ids))
+        .group_by("dialog__id")
+        .annotate(last_message_id=Max("id"))
+        .values_list("last_message_id", flat=True)
+    )).select_related("dialog__from_user", "dialog__to_user", "author", "media")
+
+    return {
+        message.dialog.id: await message.to_json(user)
+        for message in messages
+    }
+
+
+"""
+@router.get("/new-messages", response_model=NewMessagesResponse)
+async def get_new_message(user: JwtAuthUserDep, query: GetNewMessagesQuery = Query()):
+    dialog_q = Q(dialog__to_user=user) | Q(dialog__from_user=user)
+    last_message_id = query.new_id
+    if last_message_id == 0:
+        last_message_id = await Message.filter(dialog_q).order_by("-id").values_list("id", flat=True).first()
+    last_message_id = last_message_id or 0
+
+    db_query = Message.filter(dialog_q & Q(id__gt=query.last_known_id, id__lte=last_message_id))
+"""
 
 
 def make_dialog_q(this_user_id: int, other_user_id: int, prefix: str = "") -> Q:

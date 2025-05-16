@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Query
 
-from fastapi import APIRouter, Query
-
 from kkp.dependencies import JwtAuthAdminDepN, AnimalReportDep
 from kkp.models import AnimalReport, User
 from kkp.schemas.admin.animal_reports import EditAnimalReportRequest

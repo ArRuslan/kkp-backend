@@ -110,3 +110,10 @@ async def admin_vol_request_dep(volunteer_request_id: int, _: JwtAuthAdminDep) -
     return vol_request
 
 AdminVolunteerRequestDep = Annotated[VolunteerRequest, Depends(admin_vol_request_dep)]
+
+
+async def admin_treatment_dep(_: JwtAuthAdminDep, report: TreatmentReportDep) -> TreatmentReport:
+    return report
+
+
+AdminTreatmentReportDep = Annotated[TreatmentReport, Depends(admin_treatment_dep)]

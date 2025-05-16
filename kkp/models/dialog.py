@@ -27,5 +27,5 @@ class Dialog(Model):
 
         return {
             "id": self.id,
-            "user": await other_user.to_json_base()
+            "user": await other_user.to_json_base(),
         }
