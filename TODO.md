@@ -1,7 +1,7 @@
 TODO:
   - [x] User profile
   - [x] Animal reports (when animal is found) creation
-  - [ ] Send notification to volunteers and vets when animal report is created
+  - [x] Send notification to volunteers and vets when animal report is created
   - [x] Recent near reports viewing for volunteers and vets
   - [ ] Recently updated animals viewing for all users - ???
   - [x] Auth via google
@@ -32,7 +32,7 @@ TODO:
   - [x] Messages creation
   - [x] Messages viewing
   - [ ] Sending messages via websocket ?
-  - [ ] Sending messages notifications
+  - [x] Sending messages notifications
   - [ ] Messages editing - ?
   - [ ] Messages deleting - ?
   - [ ] FAQs ??

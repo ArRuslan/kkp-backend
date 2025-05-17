@@ -16,6 +16,7 @@ from kkp.utils.custom_exception import CustomMessageException
 from kkp.utils.google_oauth import authorize_google
 from kkp.utils.jwt import JWT
 from kkp.utils.mfa import Mfa
+from kkp.utils.notification_util import send_notification
 
 router = APIRouter(prefix="/auth")
 
@@ -190,15 +191,15 @@ async def request_reset_password(data: ResetPasswordRequest):
 
     reset_token = JWT.encode({"u": user.id, "type": "password-reset"}, config.JWT_KEY, expires_in=60 * 30)
 
-    message = EmailMessage()
-    message["From"] = "kkp@example.com"
-    message["To"] = user.email
-    message["Subject"] = "Password reset"
-    message.set_content(
-        f"Click the following link to reset your password: "
-        f"{config.public_host}/reset-password?reset_token={reset_token}"
+    await send_notification(
+        user,
+        "Password reset",
+        (
+            f"Click the following link to reset your password: "
+            f"{config.public_host}/reset-password?reset_token={reset_token}"
+        ),
+        fcm=False,
     )
-    await SMTP.send(message, timeout=5)
 
 
 @router.post("/reset-password/reset", status_code=204)

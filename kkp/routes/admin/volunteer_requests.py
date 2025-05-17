@@ -8,6 +8,7 @@ from kkp.models import User, UserRole, VolRequestStatus
 from kkp.schemas.admin.volunteer_requests import VolReqPaginationQuery, ApproveRejectVolunteerRequest
 from kkp.schemas.common import PaginationResponse
 from kkp.schemas.volunteer_requests import VolunteerRequestInfo
+from kkp.utils.notification_util import send_notification
 
 router = APIRouter(prefix="/volunteer-requests", dependencies=[JwtAuthAdminDepN])
 
@@ -37,11 +38,18 @@ async def approve_volunteer_request(vol_request: AdminVolunteerRequestDep, data:
         await vol_request.user.save(update_fields=["role"])
 
     vol_request.status = VolRequestStatus.APPROVED
-    vol_request.text = data.text
+    vol_request.review_text = data.text
     vol_request.reviewed_at = datetime.now(UTC)
-    await vol_request.save(update_fields=["status", "text", "reviewed_at"])
+    await vol_request.save(update_fields=["status", "review_text", "reviewed_at"])
 
-    # TODO: send email/notification
+    await send_notification(
+        vol_request.user,
+        "Volunteer request approved",
+        (
+            f"Your volunteer request has been approved!\n"
+            +(f"Comment: \n{vol_request.review_text}" if vol_request.review_text else "")
+        ),
+    )
 
     return await vol_request.to_json()
 
@@ -49,10 +57,17 @@ async def approve_volunteer_request(vol_request: AdminVolunteerRequestDep, data:
 @router.post("/{volunteer_request_id}/reject", response_model=VolunteerRequestInfo)
 async def reject_volunteer_request(vol_request: AdminVolunteerRequestDep, data: ApproveRejectVolunteerRequest):
     vol_request.status = VolRequestStatus.REFUSED
-    vol_request.text = data.text
+    vol_request.review_text = data.text
     vol_request.reviewed_at = datetime.now(UTC)
-    await vol_request.save(update_fields=["status", "text", "reviewed_at"])
+    await vol_request.save(update_fields=["status", "review_text", "reviewed_at"])
 
-    # TODO: send email/notification
+    await send_notification(
+        vol_request.user,
+        "Volunteer request rejected",
+        (
+                f"Your volunteer request has been rejected!\n"
+                + (f"Comment: \n{vol_request.review_text}" if vol_request.review_text else "")
+        ),
+    )
 
     return await vol_request.to_json()

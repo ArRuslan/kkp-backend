@@ -33,3 +33,7 @@ class UserMfaEnableRequest(BaseModel):
 class UserMfaDisableRequest(BaseModel):
     password: str
     code: str = Field(min_length=6, max_length=6, pattern=r'^\d{6}$')
+
+
+class RegisterDeviceRequest(BaseModel):
+    fcm_token: str

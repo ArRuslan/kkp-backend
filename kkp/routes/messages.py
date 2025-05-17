@@ -10,6 +10,7 @@ from kkp.schemas.common import PaginationResponse, PaginationQuery
 from kkp.schemas.messages import DialogInfo, CreateMessageRequest, MessageInfo, MessagePaginationQuery, \
     GetLastMessagesRequest, NewMessagesResponse, GetNewMessagesQuery
 from kkp.utils.custom_exception import CustomMessageException
+from kkp.utils.notification_util import send_notification
 
 router = APIRouter(prefix="/messages")
 
@@ -114,13 +115,20 @@ async def send_message(user_id: int, user: JwtAuthUserDep, data: CreateMessageRe
     if dialog is None:
         dialog = await Dialog.create(from_user=user, to_user=other_user)
 
-    # TODO: send notification to other_user
-
     media = None
     if data.media_id is not None:
         if (media := await Media.get_or_none(id=data.media_id, uploaded_by=user)) is None:
             raise CustomMessageException("Media does not exist!")
 
     message = await Message.create(dialog=dialog, author=user, text=data.text, media=media)
+
+    await send_notification(
+        other_user,
+        "New message",
+        (
+                f"You have new message from {user.first_name}!\n"
+                + (f"Comment: \n{message.text}" if message.text else "")
+        ),
+    )
 
     return await message.to_json(user)

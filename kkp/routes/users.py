@@ -1,8 +1,11 @@
+from time import time
+
 from fastapi import APIRouter
 
-from kkp.dependencies import JwtAuthUserDep
+from kkp.dependencies import JwtAuthUserDep, JwtSessionDep
 from kkp.models import Media, User, UserProfilePhoto
-from kkp.schemas.users import UserInfo, UserEditRequest, UserMfaEnableRequest, UserMfaDisableRequest
+from kkp.schemas.users import UserInfo, UserEditRequest, UserMfaEnableRequest, UserMfaDisableRequest, \
+    RegisterDeviceRequest
 from kkp.utils.custom_exception import CustomMessageException
 from kkp.utils.mfa import Mfa
 
@@ -62,3 +65,17 @@ async def disable_mfa(user: JwtAuthUserDep, data: UserMfaDisableRequest):
     await user.save(update_fields=["mfa_key"])
 
     return await user.to_json()
+
+
+@router.post("/register-device", status_code=204)
+async def register_device_for_notifications(session: JwtSessionDep, data: RegisterDeviceRequest):
+    session.fcm_token = data.fcm_token
+    session.fcm_token_time = int(time())
+    await session.save(update_fields=["fcm_token", "fcm_token_time"])
+
+
+@router.post("/unregister-device", status_code=204)
+async def unregister_device_for_notifications(session: JwtSessionDep):
+    session.fcm_token = None
+    session.fcm_token_time = 0
+    await session.save(update_fields=["fcm_token", "fcm_token_time"])

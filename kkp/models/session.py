@@ -17,6 +17,9 @@ class Session(Model):
     created_at: datetime = fields.DatetimeField(auto_now_add=True)
     active: bool = fields.BooleanField(default=True)
 
+    fcm_token: str | None = fields.TextField(null=True, default=None)
+    fcm_token_time: int = fields.BigIntField(default=0)
+
     def to_jwt(self) -> str:
         return JWT.encode(
             {
