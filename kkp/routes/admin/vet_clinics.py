@@ -2,7 +2,8 @@ from fastapi import APIRouter, Query
 
 from kkp.dependencies import JwtAuthAdminDepN, AdminVetClinicDep, JwtAuthVetAdminDep
 from kkp.models import VetClinic, GeoPoint, User, UserRole
-from kkp.schemas.admin.vet_clinics import CreateVetClinicRequest, EditVetClinicRequest, EditEmployeeRequest
+from kkp.schemas.admin.vet_clinics import CreateVetClinicRequest, EditVetClinicRequest, EditEmployeeRequest, \
+    VetClinicsQuery
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 from kkp.schemas.users import UserInfo
 from kkp.schemas.vet_clinics import VetClinicInfo
@@ -12,8 +13,19 @@ router = APIRouter(prefix="/vet-clinic")
 
 
 @router.get("", response_model=PaginationResponse[VetClinicInfo])
-async def get_clinics(user: JwtAuthVetAdminDep, query: PaginationQuery = Query()):
+async def get_clinics(user: JwtAuthVetAdminDep, query: VetClinicsQuery = Query()):
     db_query = VetClinic.filter(admin=user) if user.role < UserRole.GLOBAL_ADMIN else VetClinic.all()
+
+    if query.id is not None:
+        db_query = db_query.filter(id=query.id)
+    if query.admin_id is not None:
+        db_query = db_query.filter(admin__id=query.admin_id)
+
+    order = query.order_by
+    if query.order == "desc":
+        order = f"-{order}"
+
+    db_query = db_query.order_by(order)
 
     return {
         "count": await db_query.count(),

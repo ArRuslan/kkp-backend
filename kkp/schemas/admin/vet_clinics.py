@@ -1,6 +1,8 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
-from kkp.schemas.common import GeoPointInfo
+from kkp.schemas.common import GeoPointInfo, PaginationQuery
 from kkp.schemas.users import UserBaseInfo
 
 
@@ -21,3 +23,10 @@ class EditVetClinicRequest(BaseModel):
 
 class EditEmployeeRequest(BaseModel):
     email: str
+
+
+class VetClinicsQuery(PaginationQuery):
+    order: Literal["asc", "desc"] = "asc"
+    order_by: Literal["id"] = "id"
+    id: int | None = None
+    admin_id: int | None = None
