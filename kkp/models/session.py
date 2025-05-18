@@ -2,11 +2,16 @@ from __future__ import annotations
 
 from datetime import datetime
 from os import urandom
+from typing import Any
 
-from tortoise import fields, Model
+from pytz import UTC
+from tortoise import fields, Model, BaseDBAsyncClient
+from tortoise.contrib.mysql.indexes import SpatialIndex
+from tortoise.models import MODEL
 
 from kkp import models
 from kkp.config import config
+from kkp.db.point import PointField, Point
 from kkp.utils.jwt import JWT
 
 
@@ -19,6 +24,24 @@ class Session(Model):
 
     fcm_token: str | None = fields.TextField(null=True, default=None)
     fcm_token_time: int = fields.BigIntField(default=0)
+
+    location: Point = PointField()
+    location_time: datetime = fields.DatetimeField()
+
+    class Meta:
+        indexes = [
+            SpatialIndex(fields=("location",))
+        ]
+
+    @classmethod
+    async def create(
+        cls: type[MODEL], using_db: BaseDBAsyncClient | None = None, **kwargs: Any
+    ) -> MODEL:
+        if "location" not in kwargs:
+            kwargs["location"] = Point(0., 0.)
+        if "location_time" not in kwargs:
+            kwargs["location_time"] = datetime.fromtimestamp(0, UTC)
+        return await super().create(using_db=using_db, **kwargs)
 
     def to_jwt(self) -> str:
         return JWT.encode(

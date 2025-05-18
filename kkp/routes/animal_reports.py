@@ -3,9 +3,10 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Query
 from pytz import UTC
 
+from kkp.config import FCM
 from kkp.db.point import Point, STDistanceSphere
 from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, AnimalReportDep, JwtAuthVetDepN
-from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, UserRole
+from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, UserRole, Session
 from kkp.schemas.animal_reports import CreateAnimalReportsRequest, AnimalReportInfo, RecentReportsQuery
 from kkp.schemas.common import PaginationResponse
 from kkp.utils.custom_exception import CustomMessageException
@@ -19,15 +20,36 @@ async def create_animal_report(user: JwtAuthUserDep, data: CreateAnimalReportsRe
     if location is None:
         location = await GeoPoint.create(name=None, latitude=data.latitude, longitude=data.longitude)
 
-    # TODO: handle already existing animals
-    animal = await Animal.create(
-        name=data.name, breed=data.breed, status=AnimalStatus.FOUND, current_location=location,
-    )
+    if data.animal_id is not None:
+        if (animal := await Animal.get_or_none(id=data.animal_id)) is None:
+            raise CustomMessageException("Unknown animal!", 404)
+    elif data.name is not None and data.breed is not None:
+        animal = await Animal.create(
+            name=data.name, breed=data.breed, status=AnimalStatus.FOUND, current_location=location,
+        )
+    else:
+        raise CustomMessageException("You need to specify either animal id or name and breed!", 400)
+
     report = await AnimalReport.create(reported_by=user, animal=animal, notes=data.notes, location=location)
     media = await Media.filter(id__in=data.media_ids, uploaded_by=user)
     await report.media.add(*media)
 
-    # TODO: send notification to near vets and volunteers
+    session_query = Session.filter(
+        location_time__gt=datetime.now(UTC) - timedelta(days=14), fcm_token__not=None,
+        user__role__in=(UserRole.VET, UserRole.VOLUNTEER),
+    ) \
+        .annotate(dist=STDistanceSphere("location", location.point)) \
+        .filter(dist__lt=25000)
+
+    for session in await session_query:
+        try:
+            await FCM.send_notification(
+                "New animal needs your help!",
+                f"Name: {animal.name}\nBreed: {animal.breed}\nNotes: {report.notes}",
+                device_token=session.fcm_token,
+            )
+        except Exception as e:
+            ...  # TODO: log error
 
     return await report.to_json()
 

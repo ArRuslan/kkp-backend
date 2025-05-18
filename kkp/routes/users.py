@@ -2,10 +2,11 @@ from time import time
 
 from fastapi import APIRouter
 
+from kkp.db.point import Point
 from kkp.dependencies import JwtAuthUserDep, JwtSessionDep
 from kkp.models import Media, User, UserProfilePhoto
 from kkp.schemas.users import UserInfo, UserEditRequest, UserMfaEnableRequest, UserMfaDisableRequest, \
-    RegisterDeviceRequest
+    RegisterDeviceRequest, UpdateLocationRequest
 from kkp.utils.custom_exception import CustomMessageException
 from kkp.utils.mfa import Mfa
 
@@ -79,3 +80,10 @@ async def unregister_device_for_notifications(session: JwtSessionDep):
     session.fcm_token = None
     session.fcm_token_time = 0
     await session.save(update_fields=["fcm_token", "fcm_token_time"])
+
+
+@router.post("/location", status_code=204)
+async def update_user_location(session: JwtSessionDep, data: UpdateLocationRequest):
+    session.location = Point(data.longitude, data.latitude)
+    session.location_time = int(time())
+    await session.save(update_fields=["location", "location_time"])

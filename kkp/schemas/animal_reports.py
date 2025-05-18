@@ -7,10 +7,10 @@ from kkp.schemas.users import UserBaseInfo
 
 
 class CreateAnimalReportsRequest(BaseModel):
-    # TODO: accept existing animal id if user found animal with qr code
+    animal_id: int | None = None
 
-    name: str
-    breed: str
+    name: str | None = None
+    breed: str | None = None
     notes: str
     latitude: float
     longitude: float

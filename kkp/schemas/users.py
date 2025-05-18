@@ -37,3 +37,8 @@ class UserMfaDisableRequest(BaseModel):
 
 class RegisterDeviceRequest(BaseModel):
     fcm_token: str
+
+
+class UpdateLocationRequest(BaseModel):
+    latitude: float
+    longitude: float
