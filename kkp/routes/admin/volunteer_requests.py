@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 from pytz import UTC
 
 from kkp.dependencies import JwtAuthAdminDepN, AdminVolunteerRequestDep
-from kkp.models import User, UserRole, VolRequestStatus
+from kkp.models import User, UserRole, VolRequestStatus, VolunteerRequest
 from kkp.schemas.admin.volunteer_requests import VolReqPaginationQuery, ApproveRejectVolunteerRequest
 from kkp.schemas.common import PaginationResponse
 from kkp.schemas.volunteer_requests import VolunteerRequestInfo
@@ -15,11 +15,26 @@ router = APIRouter(prefix="/volunteer-requests", dependencies=[JwtAuthAdminDepN]
 
 @router.get("", response_model=PaginationResponse[VolunteerRequestInfo])
 async def get_volunteer_requests(query: VolReqPaginationQuery = Query()):
+    req_query = VolunteerRequest.filter()
+
+    if query.id is not None:
+        req_query = req_query.filter(id=query.id)
+    if query.status is not None:
+        req_query = req_query.filter(status=query.status)
+    if query.user_id is not None:
+        req_query = req_query.filter(user__id=query.user_id)
+
+    order = query.order_by
+    if query.order == "desc":
+        order = f"-{order}"
+
+    req_query = req_query.order_by(order)
+
     return {
-        "count": await User.all().count(),
+        "count": await req_query.count(),
         "result": [
-            await user.to_json()
-            for user in await User.all() \
+            await req.to_json()
+            for req in await req_query.select_related("user") \
                 .limit(query.page_size) \
                 .offset(query.page_size * (query.page - 1))
         ],
