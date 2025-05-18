@@ -13,6 +13,7 @@ class EditAnimalReportRequest(BaseModel):
 class AnimalReportsQuery(PaginationQuery):
     order: Literal["asc", "desc"] = "asc"
     order_by: Literal["id", "created_at"] = "id"
+    id: int | None = None
     reported_by_id: int | None = None
     animal_id: int | None = None
     assigned_to_id: int | None = None

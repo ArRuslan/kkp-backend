@@ -5,19 +5,33 @@ from pytz import UTC
 
 from kkp.dependencies import JwtAuthAdminDepN, AdminAnimalDep
 from kkp.models import Media, Animal
+from kkp.schemas.admin.animals import AnimalQuery
 from kkp.schemas.animals import AnimalInfo, EditAnimalRequest
-from kkp.schemas.common import PaginationResponse, PaginationQuery
+from kkp.schemas.common import PaginationResponse
 
 router = APIRouter(prefix="/animals", dependencies=[JwtAuthAdminDepN])
 
 
 @router.get("", response_model=PaginationResponse[AnimalInfo])
-async def get_animals(query: PaginationQuery = Query()):
+async def get_animals(query: AnimalQuery = Query()):
+    animals_query = Animal.filter()
+
+    if query.id is not None:
+        animals_query = animals_query.filter(id=query.id)
+    if query.status is not None:
+        animals_query = animals_query.filter(status=query.status)
+
+    order = query.order_by
+    if query.order == "desc":
+        order = f"-{order}"
+
+    animals_query = animals_query.order_by(order)
+
     return {
-        "count": await Animal.all().count(),
+        "count": await animals_query.count(),
         "result": [
             await animal.to_json()
-            for animal in await Animal.all() \
+            for animal in await animals_query \
                 .limit(query.page_size) \
                 .offset(query.page_size * (query.page - 1))
         ],

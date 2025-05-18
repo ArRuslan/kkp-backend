@@ -15,6 +15,8 @@ router = APIRouter(prefix="/animal-reports", dependencies=[JwtAuthAdminDepN])
 async def get_animal_reports(query: AnimalReportsQuery = Query()):
     reports_query = AnimalReport.filter()
 
+    if query.id is not None:
+        reports_query = reports_query.filter(id=query.id)
     if query.assigned_to_id is not None:
         reports_query = reports_query.filter(assigned_to__id=query.assigned_to_id)
     if query.reported_by_id is not None:
