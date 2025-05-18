@@ -1,4 +1,3 @@
-from email.message import EmailMessage
 from os import urandom
 from time import time
 
@@ -6,7 +5,7 @@ import bcrypt
 from fastapi import APIRouter
 from starlette.responses import JSONResponse
 
-from kkp.config import config, SMTP
+from kkp.config import config
 from kkp.dependencies import JwtSessionDep, JwtAuthUserDep
 from kkp.models import User, Session, ExternalAuth, ExtAuthType
 from kkp.schemas.auth import RegisterResponse, RegisterRequest, LoginResponse, LoginRequest, MfaResponse, \

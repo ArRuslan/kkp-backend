@@ -8,7 +8,7 @@ from kkp.dependencies import JwtAuthUserDep
 from kkp.models import Dialog, Message, User, Media
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 from kkp.schemas.messages import DialogInfo, CreateMessageRequest, MessageInfo, MessagePaginationQuery, \
-    GetLastMessagesRequest, NewMessagesResponse, GetNewMessagesQuery
+    GetLastMessagesRequest
 from kkp.utils.custom_exception import CustomMessageException
 from kkp.utils.notification_util import send_notification
 

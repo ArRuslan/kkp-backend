@@ -2,8 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from kkp.schemas.common import GeoPointInfo, PaginationQuery
-from kkp.schemas.users import UserBaseInfo
+from kkp.schemas.common import PaginationQuery
 
 
 class CreateVetClinicRequest(BaseModel):

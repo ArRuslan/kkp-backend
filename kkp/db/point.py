@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import struct
-from typing import Any
 
 from pypika_tortoise import CustomFunction
 from tortoise import fields
 from tortoise.exceptions import FieldError
-from tortoise.expressions import Function, CombinedExpression, F
+from tortoise.expressions import Function
 
 
 class Point:

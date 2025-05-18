@@ -1,10 +1,6 @@
 from pydantic import BaseModel
 
 from kkp.schemas.animal_reports import AnimalReportInfo
-from kkp.schemas.animals import AnimalInfo
-from kkp.schemas.common import GeoPointInfo
-from kkp.schemas.media import MediaInfo
-from kkp.schemas.users import UserBaseInfo
 
 
 class CreateTreatmentReportRequest(BaseModel):

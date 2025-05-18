@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 from pytz import UTC
 
 from kkp.dependencies import JwtAuthAdminDepN, AdminVolunteerRequestDep
-from kkp.models import User, UserRole, VolRequestStatus, VolunteerRequest
+from kkp.models import UserRole, VolRequestStatus, VolunteerRequest
 from kkp.schemas.admin.volunteer_requests import VolReqPaginationQuery, ApproveRejectVolunteerRequest
 from kkp.schemas.common import PaginationResponse
 from kkp.schemas.volunteer_requests import VolunteerRequestInfo

@@ -1,6 +1,6 @@
 from typing import Literal
 
-from kkp.models import AnimalStatus, MediaType, MediaStatus
+from kkp.models import MediaType, MediaStatus
 from kkp.schemas.common import PaginationQuery
 
 
