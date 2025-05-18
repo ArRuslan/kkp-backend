@@ -2,22 +2,37 @@ from fastapi import APIRouter, Query
 
 from kkp.dependencies import JwtAuthAdminDepN, AnimalReportDep
 from kkp.models import AnimalReport, User
-from kkp.schemas.admin.animal_reports import EditAnimalReportRequest
+from kkp.schemas.admin.animal_reports import EditAnimalReportRequest, AnimalReportsQuery
 from kkp.schemas.animal_reports import AnimalReportInfo
 from kkp.schemas.animals import AnimalInfo
-from kkp.schemas.common import PaginationResponse, PaginationQuery
+from kkp.schemas.common import PaginationResponse
 from kkp.utils.custom_exception import CustomMessageException
 
 router = APIRouter(prefix="/animal-reports", dependencies=[JwtAuthAdminDepN])
 
 
 @router.get("", response_model=PaginationResponse[AnimalReportInfo])
-async def get_animal_reports(query: PaginationQuery = Query()):
+async def get_animal_reports(query: AnimalReportsQuery = Query()):
+    reports_query = AnimalReport.filter()
+
+    if query.assigned_to_id is not None:
+        reports_query = reports_query.filter(assigned_to__id=query.assigned_to_id)
+    if query.reported_by_id is not None:
+        reports_query = reports_query.filter(reported_by__id=query.reported_by_id)
+    if query.animal_id is not None:
+        reports_query = reports_query.filter(animal__id=query.animal_id)
+
+    order = query.order_by
+    if query.order == "desc":
+        order = f"-{order}"
+
+    reports_query = reports_query.order_by(order)
+
     return {
-        "count": await AnimalReport.all().count(),
+        "count": await reports_query.count(),
         "result": [
             await report.to_json()
-            for report in await AnimalReport.all() \
+            for report in await reports_query \
                 .limit(query.page_size) \
                 .offset(query.page_size * (query.page - 1))
         ],
