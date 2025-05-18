@@ -35,5 +35,4 @@ TODO:
   - [x] Sending messages notifications
   - [ ] Messages editing - ?
   - [ ] Messages deleting - ?
-  - [ ] FAQs ??
   - [ ] Caching
