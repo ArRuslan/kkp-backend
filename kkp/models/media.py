@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import IntEnum
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from tortoise import Model, fields
 
@@ -26,7 +26,7 @@ class Media(Model):
     uploaded_by: models.User = fields.ForeignKeyField("models.User")  # TODO: make nullable ??
     type: MediaType = fields.IntEnumField(MediaType)
     status: MediaStatus = fields.IntEnumField(MediaStatus, default=MediaStatus.CREATED)
-    media_id: UUID | None = fields.UUIDField(null=True, default=None)
+    media_id: UUID = fields.UUIDField(default=uuid4)
 
     def upload_url(self, ttl: int = 60 * 60) -> str:
         return S3_PUBLIC.share(config.s3_bucket_name, self.object_key(), ttl, True)
