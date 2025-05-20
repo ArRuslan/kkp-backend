@@ -12,7 +12,7 @@ async def get_user_subscriptions(user: JwtAuthUserDep, query: PaginationQuery = 
     return {
         "count": await user.subscriptions.all().count(),
         "result": [
-            await animal.to_json()
+            await animal.to_json(user)
             for animal in await user.subscriptions\
                 .offset((query.page - 1) * query.page_size)\
                 .limit(query.page_size)

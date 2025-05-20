@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Query
 from pytz import UTC
 
-from kkp.dependencies import AnimalDep, JwtAuthUserDepN, JwtAuthVetDepN
+from kkp.dependencies import AnimalDep, JwtAuthUserDepN, JwtAuthVetDepN, JwtMaybeAuthUserDep
 from kkp.models import Animal, Media, AnimalReport, TreatmentReport
 from kkp.schemas.admin.animals import AnimalQuery
 from kkp.schemas.animal_reports import AnimalReportInfo
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/animals")
 
 
 @router.get("", response_model=PaginationResponse[AnimalInfo])
-async def get_animals(query: AnimalQuery = Query()):
+async def get_animals(user: JwtMaybeAuthUserDep, query: AnimalQuery = Query()):
     animals_query = Animal.filter()
 
     if query.id is not None:
@@ -32,7 +32,7 @@ async def get_animals(query: AnimalQuery = Query()):
     return {
         "count": await animals_query.count(),
         "result": [
-            await animal.to_json()
+            await animal.to_json(user)
             for animal in await animals_query \
                 .limit(query.page_size) \
                 .offset(query.page_size * (query.page - 1))
@@ -41,8 +41,8 @@ async def get_animals(query: AnimalQuery = Query()):
 
 
 @router.get("/{animal_id}", response_model=AnimalInfo)
-async def get_animal(animal: AnimalDep):
-    return await animal.to_json()
+async def get_animal(animal: AnimalDep, user: JwtMaybeAuthUserDep):
+    return await animal.to_json(user)
 
 
 @router.patch("/{animal_id}", response_model=AnimalInfo, dependencies=[JwtAuthVetDepN])

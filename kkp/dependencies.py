@@ -20,6 +20,19 @@ async def jwt_auth_session(
     return session
 
 
+async def jwt_auth_session_maybe(
+        authorization: str | None = Header(default=None),
+        x_token: str | None = Header(default=None),
+) -> Session | None:
+    authorization = authorization or x_token
+    if not authorization or (session := await Session.from_jwt(authorization)) is None:
+        return None
+    if not session.active:
+        raise CustomMessageException("Session is not active.", 403)
+
+    return session
+
+
 JwtSessionDep = Annotated[Session, Depends(jwt_auth_session)]
 
 
@@ -45,6 +58,16 @@ JwtAuthVetAdminDep = Annotated[User, JwtAuthVetAdminDepN]
 
 JwtAuthAdminDepN = Depends(JWTAuthUser(UserRole.GLOBAL_ADMIN))
 JwtAuthAdminDep = Annotated[User, JwtAuthAdminDepN]
+
+
+async def jwt_auth_user_maybe(session: Session | None = Depends(jwt_auth_session_maybe)) -> User | None:
+    if session is None:
+        return None
+    return session.user
+
+
+JwtMaybeAuthUserDepN = Depends(jwt_auth_user_maybe)
+JwtMaybeAuthUserDep = Annotated[User | None, JwtMaybeAuthUserDepN]
 
 
 async def animal_dep(animal_id: int) -> Animal:

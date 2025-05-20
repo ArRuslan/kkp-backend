@@ -27,12 +27,16 @@ class Animal(Model):
     current_location: models.GeoPoint | None = fields.ForeignKeyField("models.GeoPoint", null=True)  # ??
     updated_at: datetime = fields.DatetimeField(auto_now_add=True)
 
-    async def to_json(self) -> dict:
+    async def to_json(self, current_user: models.User | None = None) -> dict:
         total_media_count = await self.medias.all().count()
         medias = await self.medias.all().order_by("-id").limit(5)
 
         if self.current_location is not None:
             self.current_location = await self.current_location
+
+        subscribed = False
+        if current_user is not None:
+            subscribed = await current_user.subscriptions.filter(id=self.id).exists()
 
         return {
             "id": self.id,
@@ -49,4 +53,5 @@ class Animal(Model):
             },
             "current_location": self.current_location.to_json() if self.current_location is not None else None,
             "updated_at": int(self.updated_at.timestamp()),
+            "subscribed": subscribed,
         }

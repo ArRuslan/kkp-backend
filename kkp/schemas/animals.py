@@ -14,6 +14,8 @@ class AnimalInfo(BaseModel):
     media: PaginationResponse[MediaInfo]
     current_location: GeoPointInfo | None
     updated_at: int
+    # `subscribed` field is only returned in /subscriptions, /animals and /animals/{animal_id} routes
+    subscribed: bool
 
 
 class CreateAnimalRequest(BaseModel):
