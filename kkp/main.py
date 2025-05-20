@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+from os import environ
 
 from aerich import Command
 from fastapi import FastAPI
@@ -19,15 +20,14 @@ from .utils.custom_exception import CustomMessageException
 
 @asynccontextmanager
 async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
-    if not config.is_debug:
-        migrations_dir = "data/migrations"
-
+    is_testing = environ.get("TORTOISE_TESTING") == "1"
+    if not is_testing:
         command = Command({
             "connections": {"default": config.db_connection_string},
             "apps": {"models": {"models": ["kkp.models", "aerich.models"], "default_connection": "default"}},
-        }, location=migrations_dir)
+        }, location=config.migrations_dir)
         await command.init()
-        if Path(migrations_dir).exists():
+        if Path(config.migrations_dir).exists():
             await command.migrate()
             await command.upgrade(True)
         else:
@@ -54,19 +54,17 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
             from asyncio import sleep
             await sleep(1)
 
-    from os import environ
-
     orm_config = generate_config(
         config.db_connection_string,
         app_modules={"models": ["kkp.models"]},
-        testing=environ.get("TORTOISE_TESTING") == "1",
+        testing=is_testing,
     )
 
     async with RegisterTortoise(
             app=app_,
             config=orm_config,
             generate_schemas=True,
-            _create_db=environ.get("TORTOISE_TESTING") == "1",
+            _create_db=is_testing,
     ):
         yield
 

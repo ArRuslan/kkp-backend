@@ -19,6 +19,7 @@ class _Config(BaseSettings):
     fcm_config_path: Path = "fcm_config.json"
     bcrypt_rounds: int = 12
     public_host: str = "http://127.0.0.1:8080"
+    migrations_dir: str = "data/migrations"
 
     max_photo_size: int = 8 * 1024 * 1024
     max_video_size: int = 64 * 1024 * 104
