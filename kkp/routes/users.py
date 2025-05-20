@@ -1,6 +1,8 @@
+from datetime import datetime
 from time import time
 
 from fastapi import APIRouter
+from pytz import UTC
 
 from kkp.db.point import Point
 from kkp.dependencies import JwtAuthUserDep, JwtSessionDep
@@ -85,5 +87,5 @@ async def unregister_device_for_notifications(session: JwtSessionDep):
 @router.post("/location", status_code=204)
 async def update_user_location(session: JwtSessionDep, data: UpdateLocationRequest):
     session.location = Point(data.longitude, data.latitude)
-    session.location_time = int(time())
+    session.location_time = datetime.now(UTC)
     await session.save(update_fields=["location", "location_time"])

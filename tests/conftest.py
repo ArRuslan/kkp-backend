@@ -1,4 +1,4 @@
-from os import environ
+from os import environ, urandom
 from time import time
 from typing import AsyncGenerator
 
@@ -48,8 +48,9 @@ async def client(app_with_lifespan) -> AsyncGenerator[AsyncClient, None]:
 
 
 async def create_user(role: UserRole = UserRole.REGULAR) -> User:
+    rand = int.from_bytes(urandom(6), "big")
     user = await User.create(
-        email=f"test{time()}@gmail.com", password="", first_name="first", last_name="last", role=role,
+        email=f"test{int(time()*1000)}_{rand}@gmail.com", password="", first_name="first", last_name="last", role=role,
     )
     return user
 
