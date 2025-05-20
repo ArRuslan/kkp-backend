@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Header, Depends
 
 from kkp.models import Session, User, UserRole, Animal, AnimalReport, TreatmentReport, VetClinic, VolunteerRequest, \
-    Media
+    Media, DonationGoal
 from kkp.utils.custom_exception import CustomMessageException
 
 
@@ -128,3 +128,13 @@ async def admin_media_dep(_: JwtAuthAdminDep, media_id: int) -> Media:
 
 
 AdminMediaDep = Annotated[Media, Depends(admin_media_dep)]
+
+
+async def donation_goal_dep(goal_id: int) -> DonationGoal:
+    if (goal := await DonationGoal.get_or_none(id=goal_id)) is None:
+        raise CustomMessageException("Unknown donation goal.", 404)
+
+    return goal
+
+
+DonationGoalDep = Annotated[DonationGoal, Depends(donation_goal_dep)]

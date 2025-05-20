@@ -41,8 +41,8 @@ class _Config(BaseSettings):
     oauth_google_client_secret: str = ""
     oauth_google_redirect: str = "http://127.0.0.1:8000/auth/google/callback"
 
-    # TODO: payment service api key
-    # TODO: maps api credentials ?
+    paypal_id: str = ""
+    paypal_secret: str = ""
 
     @field_validator("jwt_key", mode="before")
     def decode_jwt_key(cls, value: str | bytes) -> bytes:

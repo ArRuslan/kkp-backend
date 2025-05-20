@@ -13,6 +13,7 @@ from tortoise.contrib.fastapi import RegisterTortoise
 from .config import config, S3
 from .routes import auth, animals, media, users, subscriptions, animal_reports, admin, messages, treatment_reports, \
     vet_clinics, volunteer_requests
+from .routes.admin import donations
 from .utils.custom_exception import CustomMessageException
 
 
@@ -96,6 +97,7 @@ app.include_router(messages.router)
 app.include_router(treatment_reports.router)
 app.include_router(vet_clinics.router)
 app.include_router(volunteer_requests.router)
+app.include_router(donations.router)
 
 
 @app.exception_handler(RequestValidationError)

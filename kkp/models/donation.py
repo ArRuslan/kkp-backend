@@ -13,3 +13,18 @@ class Donation(Model):
     amount: float = fields.FloatField()
     date: datetime = fields.DatetimeField(auto_now_add=True)
     comment: str | None = fields.TextField(null=True, default=None)
+    goal: models.DonationGoal = fields.ForeignKeyField("models.DonationGoal")
+
+    async def to_json(self) -> dict:
+        self.goal = await self.goal
+        if self.user is not None:
+            self.user = await self.user
+
+        return {
+            "id": self.id,
+            "user": await self.user.to_json_base() if self.user else None,
+            "amount": self.amount,
+            "date": self.date,
+            "comment": self.comment,
+            "goal": self.goal.to_json(),
+        }
