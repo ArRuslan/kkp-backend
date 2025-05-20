@@ -3,53 +3,50 @@ from datetime import datetime
 from fastapi import APIRouter, Query
 from pytz import UTC
 
-from kkp.dependencies import JwtAuthUserDep, AnimalDep, JwtAuthVetDep, JwtAuthUserDepN
+from kkp.dependencies import AnimalDep, JwtAuthUserDepN, JwtAuthVetDepN
 from kkp.models import Animal, Media, AnimalReport, TreatmentReport
+from kkp.schemas.admin.animals import AnimalQuery
 from kkp.schemas.animal_reports import AnimalReportInfo
-from kkp.schemas.animals import AnimalInfo, CreateAnimalRequest, EditAnimalRequest
+from kkp.schemas.animals import AnimalInfo, EditAnimalRequest
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 from kkp.schemas.treatment_reports import TreatmentReportInfo
 
-router = APIRouter(prefix="/animals", deprecated=True)
+router = APIRouter(prefix="/animals")
 
 
 @router.get("", response_model=PaginationResponse[AnimalInfo])
-async def get_animals(user: JwtAuthUserDep, query: PaginationQuery = Query()):
-    """ Probably will be deleted or moved to admin api because this route allows any user to view ALL animals """
+async def get_animals(query: AnimalQuery = Query()):
+    animals_query = Animal.filter()
+
+    if query.id is not None:
+        animals_query = animals_query.filter(id=query.id)
+    if query.status is not None:
+        animals_query = animals_query.filter(status=query.status)
+
+    order = query.order_by
+    if query.order == "desc":
+        order = f"-{order}"
+
+    animals_query = animals_query.order_by(order)
 
     return {
-        "count": await Animal.all().count(),
+        "count": await animals_query.count(),
         "result": [
             await animal.to_json()
-            for animal in await Animal.all()\
-                .limit(query.page_size)\
+            for animal in await animals_query \
+                .limit(query.page_size) \
                 .offset(query.page_size * (query.page - 1))
         ],
     }
 
 
-# TODO: save user somewhere (audit logs, animal status, report, etc.)
-@router.post("", response_model=AnimalInfo, deprecated=True)
-async def add_animal(user: JwtAuthUserDep, data: CreateAnimalRequest):
-    """ Probably will be deleted or moved to admin api because animals should be added via found animal reports (?) """
-
-    medias = await Media.filter(id__in=data.media_ids)
-    animal = await Animal.create(**data.model_dump(exclude={"media_ids"}))
-    await animal.medias.add(*medias)
-
-    return await animal.to_json()
-
-
 @router.get("/{animal_id}", response_model=AnimalInfo)
 async def get_animal(animal: AnimalDep):
-    """ Idk if it is a good idea to allow any user (even unauthenticated ones) to get any animal """
     return await animal.to_json()
 
 
-@router.patch("/{animal_id}", response_model=AnimalInfo)
-async def edit_animal(user: JwtAuthVetDep, animal: AnimalDep, data: EditAnimalRequest):
-    """ Probably will be deleted or moved to vet api """
-
+@router.patch("/{animal_id}", response_model=AnimalInfo, dependencies=[JwtAuthVetDepN])
+async def edit_animal(animal: AnimalDep, data: EditAnimalRequest):
     media_ids = data.media_ids
     data = data.model_dump(exclude_defaults=True, exclude={"media_ids"})
     if media_ids is not None:
@@ -73,15 +70,8 @@ async def edit_animal(user: JwtAuthVetDep, animal: AnimalDep, data: EditAnimalRe
     return await animal.to_json()
 
 
-@router.delete("/{animal_id}", status_code=204)
-async def delete_animal(user: JwtAuthVetDep, animal: AnimalDep):
-    """ Probably will be deleted or moved to admin api """
-
-    await animal.delete()
-
-
 @router.get("/{animal_id}/reports", response_model=PaginationResponse[AnimalReportInfo], dependencies=[JwtAuthUserDepN], deprecated=False)
-async def get_animals(animal: AnimalDep, query: PaginationQuery = Query()):
+async def get_animal_reports(animal: AnimalDep, query: PaginationQuery = Query()):
     return {
         "count": await AnimalReport.filter(animal=animal).count(),
         "result": [
@@ -95,7 +85,7 @@ async def get_animals(animal: AnimalDep, query: PaginationQuery = Query()):
 
 
 @router.get("/{animal_id}/treatment-reports", response_model=PaginationResponse[TreatmentReportInfo], dependencies=[JwtAuthUserDepN], deprecated=False)
-async def get_animals(animal: AnimalDep, query: PaginationQuery = Query()):
+async def get_animal_treatment_reports(animal: AnimalDep, query: PaginationQuery = Query()):
     return {
         "count": await TreatmentReport.filter(report__animal=animal).count(),
         "result": [

@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from pytz import UTC
 
 from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, TreatmentReportDep
-from kkp.models import AnimalReport, UserRole, TreatmentReport
+from kkp.models import AnimalReport, UserRole, TreatmentReport, VetClinic
 from kkp.schemas.treatment_reports import TreatmentReportInfo, CreateTreatmentReportRequest
 from kkp.utils.custom_exception import CustomMessageException
 
@@ -19,8 +19,10 @@ async def create_treatment_report(user: JwtAuthVetDep, data: CreateTreatmentRepo
     if report.assigned_to != user:
         raise CustomMessageException("This report was assigned to different user.", 400)
 
+    vet_clinic = await VetClinic.filter(employees__id=user.id).first()
+
     treatment_report = await TreatmentReport.create(
-        report=report, description=data.description, money_spent=data.money_spent,
+        report=report, description=data.description, money_spent=data.money_spent, vet_clinic=vet_clinic,
     )
     report.animal.updated_at = datetime.now(UTC)
     await report.animal.save(update_fields=["updated_at"])
