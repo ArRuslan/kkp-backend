@@ -41,7 +41,7 @@ async def create_animal_report(user: JwtAuthUserDep, data: CreateAnimalReportsRe
         .annotate(dist=STDistanceSphere("location", location.point)) \
         .filter(dist__lt=25000)
 
-    for session in await session_query:
+    for session in await session_query:  # pragma: no cover
         try:
             await FCM.send_notification(
                 "New animal needs your help!",

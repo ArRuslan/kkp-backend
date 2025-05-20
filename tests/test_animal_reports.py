@@ -129,3 +129,71 @@ async def test_assign_report(client: AsyncClient):
     assert response.status_code == 200, response.json()
     reports = PaginationAnimalReportResponse(**response.json())
     assert reports.count == 0
+
+
+@pytest.mark.asyncio
+async def test_create_report_for_existing_animal(client: AsyncClient):
+    user_token = await create_token(UserRole.REGULAR)
+    vet_token = await create_token(UserRole.VET)
+
+    response = await client.post("/animal-reports", headers={"authorization": user_token}, json={
+        "name": "test animal",
+        "breed": "idk breed",
+        "notes": "some notes\n123",
+        "latitude": LAT,
+        "longitude": LON,
+        "media_ids": [],
+    })
+    assert response.status_code == 200, response.json()
+    report = AnimalReportInfo(**response.json())
+
+    response = await client.get(f"/animals/{report.animal.id}/reports", headers={"authorization": vet_token})
+    assert response.status_code == 200, response.json()
+    reports = PaginationAnimalReportResponse(**response.json())
+    assert reports.count == 1
+    assert reports.result[0] == report
+
+    response = await client.post("/animal-reports", headers={"authorization": user_token}, json={
+        "animal_id": report.animal.id,
+        "breed": "i can put here whatever i want",
+        "notes": "some notes\n123",
+        "latitude": LAT,
+        "longitude": LON,
+        "media_ids": [],
+    })
+    assert response.status_code == 200, response.json()
+    report2 = AnimalReportInfo(**response.json())
+
+    assert report2.animal == report.animal
+
+    response = await client.get(f"/animals/{report.animal.id}/reports", headers={"authorization": vet_token})
+    assert response.status_code == 200, response.json()
+    reports = PaginationAnimalReportResponse(**response.json())
+    assert reports.count == 2
+
+
+@pytest.mark.asyncio
+async def test_create_report_for_nonexisting_animal(client: AsyncClient):
+    user_token = await create_token(UserRole.REGULAR)
+
+    response = await client.post("/animal-reports", headers={"authorization": user_token}, json={
+        "animal_id": 123456,
+        "notes": "some notes\n123",
+        "latitude": LAT,
+        "longitude": LON,
+        "media_ids": [],
+    })
+    assert response.status_code == 404, response.json()
+
+
+@pytest.mark.asyncio
+async def test_create_report_without_name_and_id(client: AsyncClient):
+    user_token = await create_token(UserRole.REGULAR)
+
+    response = await client.post("/animal-reports", headers={"authorization": user_token}, json={
+        "notes": "some notes\n123",
+        "latitude": LAT,
+        "longitude": LON,
+        "media_ids": [],
+    })
+    assert response.status_code == 400, response.json()

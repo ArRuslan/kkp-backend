@@ -21,7 +21,7 @@ TODO:
   - [x] Vets assigning by vet admins
   - [x] Near vet clinics search
   - [x] Password reset
-  - [ ] Donations (mastercard donate api?)
+  - [ ] Donations (paypal?)
   - [x] Treatment reports creating
   - [x] Treatment reports viewing
   - [x] Volunteer requests creation

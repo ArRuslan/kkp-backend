@@ -59,6 +59,14 @@ async def create_token(user_role: UserRole = UserRole.REGULAR) -> str:
     return session.to_jwt()
 
 
+def check_sorted(it: list[int]):
+    for i in range(1, len(it)):
+        if it[i] < it[i - 1]:
+            return False
+
+    return True
+
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def run_minio_in_docker():
     print("Starting minio container...")
