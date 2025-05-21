@@ -101,7 +101,7 @@ async def get_messages(user_id: int, user: JwtAuthUserDep, query: MessagePaginat
         "count": await message_q.count(),
         "result": [
             await message.to_json(user)
-            for message in await message_q.all().select_related(*related).limit(limit)
+            for message in await message_q.all().select_related(*related).limit(limit).order_by("-id")
         ],
     }
 
