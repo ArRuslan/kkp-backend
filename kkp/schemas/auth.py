@@ -42,6 +42,10 @@ class GoogleOAuthData(BaseModel):
     state: str | None = None
 
 
+class GoogleIdOAuthData(BaseModel):
+    id_token: str
+
+
 class GoogleAuthUrlData(BaseModel):
     url: str
 

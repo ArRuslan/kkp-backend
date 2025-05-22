@@ -10,8 +10,9 @@ from kkp.dependencies import JwtSessionDep, JwtAuthUserDep
 from kkp.models import User, Session, ExternalAuth, ExtAuthType
 from kkp.schemas.auth import RegisterResponse, RegisterRequest, LoginResponse, LoginRequest, MfaResponse, \
     MfaVerifyRequest, GoogleAuthUrlData, ConnectGoogleData, GoogleOAuthData, ResetPasswordRequest, \
-    RealResetPasswordRequest
+    RealResetPasswordRequest, GoogleIdOAuthData
 from kkp.utils.custom_exception import CustomMessageException
+from kkp.utils.google_id_token import verify_oauth2_token
 from kkp.utils.google_oauth import authorize_google
 from kkp.utils.jwt import JWT
 from kkp.utils.mfa import Mfa
@@ -108,6 +109,14 @@ async def google_auth_link():
     }
 
 
+
+@router.get("/google/mobile", response_model=GoogleAuthUrlData)
+async def google_auth_mobile_client_id():
+    return {
+        "client_id": config.oauth_google_client_id,
+    }
+
+
 @router.post("/google/connect", response_model=GoogleAuthUrlData)
 async def google_auth_connect_link(user: JwtAuthUserDep):
     if await ExternalAuth.filter(user=user).exists():
@@ -148,21 +157,26 @@ async def google_auth_callback(data: GoogleOAuthData):
             external_id=data["id"],
             access_token=token_data["access_token"],
             refresh_token=token_data["refresh_token"],
-            expires_at=int(time() + token_data["expires_in"]),
+            token_expires_at=int(time() + token_data["expires_in"]),
         )
     elif state is not None and existing_auth is not None:
         # Trying to connect an external account that is already connected, ERROR!!
         raise CustomMessageException("This google account is already connected to an account.")
     elif state is None and existing_auth is None:
-        # Register new user
-        user = await User.create(first_name=data["given_name"], last_name=data["family_name"])
+        user = await User.get_or_none(email=data["email"])
+        if user is None:
+            user = await User.create(
+                email=data["email"],
+                first_name=data["given_name"],
+                last_name=data["family_name"],
+            )
         await ExternalAuth.create(
             user=user,
-            type="google",
+            type=ExtAuthType.GOOGLE,
             external_id=data["id"],
             access_token=token_data["access_token"],
             refresh_token=token_data["refresh_token"],
-            expires_at=int(time() + token_data["expires_in"]),
+            token_expires_at=int(time() + token_data["expires_in"]),
         )
     elif state is None and existing_auth is not None:
         # Authorize user
@@ -172,6 +186,49 @@ async def google_auth_callback(data: GoogleOAuthData):
 
     if user is None:
         return {"token": None, "expires_at": 0, "connect": True}
+
+    session = await Session.create(user=user, active=True)
+    return {
+        "token": session.to_jwt(),
+        "expires_at": int(time() + config.jwt_ttl),
+    }
+
+
+@router.post("/google/mobile-callback", response_model=LoginResponse)
+async def google_auth_mobile_callback(data: GoogleIdOAuthData):
+    try:
+        id_info = await verify_oauth2_token(data.id_token, config.oauth_google_client_id)
+    except ValueError:
+        raise CustomMessageException("Failed to verify token.")
+
+    existing_auth = await ExternalAuth.get_or_none(type=ExtAuthType.GOOGLE, external_id=id_info["sub"]).select_related("user")
+    if existing_auth is not None:
+        existing_auth.access_token = "id"
+        existing_auth.refresh_token = "id"
+        existing_auth.token_expires_at = 0
+        await existing_auth.save(update_fields=["access_token", "refresh_token", "token_expires_at"])
+
+    if existing_auth is None:
+        user = await User.get_or_none(email=id_info["email"])
+        if user is None:
+            user = await User.create(
+                email=id_info["email"],
+                first_name=id_info["given_name"],
+                last_name=id_info["family_name"],
+            )
+        await ExternalAuth.create(
+            user=user,
+            type=ExtAuthType.GOOGLE,
+            external_id=id_info["sub"],
+            access_token="id",
+            refresh_token="id",
+            token_expires_at=0,
+        )
+    elif existing_auth is not None:
+        # Authorize user
+        user = existing_auth.user
+    else:
+        raise RuntimeError("Unreachable")
 
     session = await Session.create(user=user, active=True)
     return {

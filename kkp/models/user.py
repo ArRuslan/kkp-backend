@@ -21,12 +21,14 @@ class User(Model):
     first_name: str = fields.CharField(max_length=64)
     last_name: str = fields.CharField(max_length=64)
     email: str = fields.CharField(max_length=255, unique=True)
-    password: str = fields.CharField(max_length=128)
+    password: str | None = fields.CharField(max_length=128, null=True, default=None)
     role: UserRole = fields.IntEnumField(UserRole, default=UserRole.REGULAR)
     subscriptions: fields.ManyToManyRelation[models.Animal] = fields.ManyToManyField("models.Animal")
     mfa_key: str | None = fields.CharField(max_length=32, null=True, default=None)
 
     def check_password(self, password: str) -> bool:
+        if self.password is None:
+            return False
         return bcrypt.checkpw(password.encode("utf8"), self.password.encode("utf8"))
 
     async def to_json_base(self) -> dict:
