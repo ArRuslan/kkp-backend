@@ -10,7 +10,7 @@ from kkp.dependencies import JwtSessionDep, JwtAuthUserDep
 from kkp.models import User, Session, ExternalAuth, ExtAuthType
 from kkp.schemas.auth import RegisterResponse, RegisterRequest, LoginResponse, LoginRequest, MfaResponse, \
     MfaVerifyRequest, GoogleAuthUrlData, ConnectGoogleData, GoogleOAuthData, ResetPasswordRequest, \
-    RealResetPasswordRequest, GoogleIdOAuthData
+    RealResetPasswordRequest, GoogleIdOAuthData, GoogleClientIdData
 from kkp.utils.custom_exception import CustomMessageException
 from kkp.utils.google_id_token import verify_oauth2_token
 from kkp.utils.google_oauth import authorize_google
@@ -110,7 +110,7 @@ async def google_auth_link():
 
 
 
-@router.get("/google/mobile", response_model=GoogleAuthUrlData)
+@router.get("/google/mobile", response_model=GoogleClientIdData)
 async def google_auth_mobile_client_id():
     return {
         "client_id": config.oauth_google_client_id,

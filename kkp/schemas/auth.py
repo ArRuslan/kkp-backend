@@ -50,6 +50,10 @@ class GoogleAuthUrlData(BaseModel):
     url: str
 
 
+class GoogleClientIdData(BaseModel):
+    client_id: str
+
+
 class ConnectGoogleData(LoginResponse):
     token: str | None
     connect: bool
