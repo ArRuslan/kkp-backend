@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 from kkp.schemas.animals import AnimalInfo
@@ -32,3 +34,8 @@ class RecentReportsQuery(PaginationQuery):
     lat: float
     lon: float
     radius: int = 5000
+
+
+class MyAnimalReportsQuery(PaginationQuery):
+    order: Literal["asc", "desc"] = "asc"
+    order_by: Literal["id", "created_at"] = "id"

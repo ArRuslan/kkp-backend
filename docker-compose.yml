@@ -29,7 +29,7 @@ services:
     networks: [ 'kkp' ]
     restart: unless-stopped
   mailcatcher:
-    image: 	schickling/mailcatcher:latest
+    image: schickling/mailcatcher:latest
     networks: [ 'kkp' ]
     restart: unless-stopped
   kkp-api:

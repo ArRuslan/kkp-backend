@@ -7,7 +7,8 @@ from kkp.config import FCM
 from kkp.db.point import Point, STDistanceSphere
 from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, AnimalReportDep, JwtAuthVetDepN
 from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, UserRole, Session
-from kkp.schemas.animal_reports import CreateAnimalReportsRequest, AnimalReportInfo, RecentReportsQuery
+from kkp.schemas.animal_reports import CreateAnimalReportsRequest, AnimalReportInfo, RecentReportsQuery, \
+    MyAnimalReportsQuery
 from kkp.schemas.common import PaginationResponse
 from kkp.utils.custom_exception import CustomMessageException
 
@@ -68,6 +69,27 @@ async def get_recent_unassigned_reports(query: RecentReportsQuery = Query()):
         "result": [
             await report.to_json()
             for report in await db_query.limit(query.page_size).offset(query.page_size * (query.page - 1))
+        ],
+    }
+
+
+@router.get("/my", response_model=PaginationResponse[AnimalReportInfo])
+async def get_my_reports(user: JwtAuthVetDep, query: MyAnimalReportsQuery = Query()):
+    reports_query = AnimalReport.filter(assigned_to=user)
+
+    order = query.order_by
+    if query.order == "desc":
+        order = f"-{order}"
+
+    reports_query = reports_query.order_by(order)
+
+    return {
+        "count": await reports_query.count(),
+        "result": [
+            await report.to_json()
+            for report in await reports_query \
+                .limit(query.page_size) \
+                .offset(query.page_size * (query.page - 1))
         ],
     }
 
