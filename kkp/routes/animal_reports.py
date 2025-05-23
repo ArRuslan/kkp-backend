@@ -76,6 +76,7 @@ async def get_recent_unassigned_reports(query: RecentReportsQuery = Query()):
 @router.get("/my", response_model=PaginationResponse[AnimalReportInfo])
 async def get_my_reports(user: JwtAuthVetDep, query: MyAnimalReportsQuery = Query()):
     reports_query = AnimalReport.filter(assigned_to=user)
+    # TODO: exclude reports that have treatment reports associated with them
 
     order = query.order_by
     if query.order == "desc":

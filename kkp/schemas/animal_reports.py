@@ -37,5 +37,5 @@ class RecentReportsQuery(PaginationQuery):
 
 
 class MyAnimalReportsQuery(PaginationQuery):
-    order: Literal["asc", "desc"] = "asc"
+    order: Literal["asc", "desc"] = "desc"
     order_by: Literal["id", "created_at"] = "id"
