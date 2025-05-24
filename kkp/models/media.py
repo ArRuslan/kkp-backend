@@ -23,7 +23,7 @@ class MediaStatus(IntEnum):
 class Media(Model):
     id: int = fields.BigIntField(pk=True)
     uploaded_at: datetime = fields.DatetimeField(auto_now_add=True)
-    uploaded_by: models.User = fields.ForeignKeyField("models.User")  # TODO: make nullable ??
+    uploaded_by: models.User | None = fields.ForeignKeyField("models.User", null=True, default=None)
     type: MediaType = fields.IntEnumField(MediaType)
     status: MediaStatus = fields.IntEnumField(MediaStatus, default=MediaStatus.CREATED)
     media_id: UUID = fields.UUIDField(default=uuid4)

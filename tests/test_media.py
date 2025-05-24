@@ -37,3 +37,26 @@ async def test_upload_photo(client: AsyncClient):
         media_response = await cl.get(resp.url)
         assert media_response.status_code == 200
         assert await media_response.aread() == IMG_1x1_PIXEL_RED
+
+
+@pytest.mark.asyncio
+async def test_upload_photo_without_auth(client: AsyncClient):
+    response = await client.post("/media", json={
+        "type": MediaType.PHOTO.value,
+        "size": len(IMG_1x1_PIXEL_RED),
+    })
+    assert response.status_code == 200, response.json()
+    resp = CreateMediaUploadResponse(**response.json())
+
+    async with AsyncClient() as cl:
+        upload_response = await cl.put(resp.upload_url, content=IMG_1x1_PIXEL_RED)
+        assert upload_response.status_code == 200
+
+    response = await client.post(f"/media/{resp.id}/finalize")
+    assert response.status_code == 200, response.json()
+    resp = MediaInfo(**response.json())
+
+    async with AsyncClient() as cl:
+        media_response = await cl.get(resp.url)
+        assert media_response.status_code == 200
+        assert await media_response.aread() == IMG_1x1_PIXEL_RED
