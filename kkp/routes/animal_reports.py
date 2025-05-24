@@ -5,7 +5,7 @@ from pytz import UTC
 
 from kkp.config import FCM
 from kkp.db.point import Point, STDistanceSphere
-from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, AnimalReportDep, JwtAuthVetDepN
+from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, AnimalReportDep, JwtAuthVetDepN, JwtMaybeAuthUserDep
 from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, UserRole, Session
 from kkp.schemas.animal_reports import CreateAnimalReportsRequest, AnimalReportInfo, RecentReportsQuery, \
     MyAnimalReportsQuery
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/animal-reports")
 
 
 @router.post("", response_model=AnimalReportInfo)
-async def create_animal_report(user: JwtAuthUserDep, data: CreateAnimalReportsRequest):
+async def create_animal_report(user: JwtMaybeAuthUserDep, data: CreateAnimalReportsRequest):
     location = await GeoPoint.get_near(data.latitude, data.longitude)
     if location is None:
         location = await GeoPoint.create(name=None, latitude=data.latitude, longitude=data.longitude)

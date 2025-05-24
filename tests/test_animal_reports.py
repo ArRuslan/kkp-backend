@@ -197,3 +197,28 @@ async def test_create_report_without_name_and_id(client: AsyncClient):
         "media_ids": [],
     })
     assert response.status_code == 400, response.json()
+
+
+@pytest.mark.asyncio
+async def test_create_animal_report_no_auth(client: AsyncClient):
+    response = await client.post("/animal-reports", json={
+        "name": "test animal 1",
+        "breed": "idk breed 1",
+        "notes": "some notes\n123",
+        "latitude": LAT,
+        "longitude": LON,
+        "media_ids": [],
+    })
+    assert response.status_code == 200, response.json()
+    resp = AnimalReportInfo(**response.json())
+    assert resp.animal is not None
+    assert resp.animal.name == "test animal 1"
+    assert resp.animal.breed == "idk breed 1"
+    assert resp.animal.media.count == 0
+    assert len(resp.animal.media.result) == 0
+    assert resp.assigned_to is None
+    assert resp.reported_by is None
+    assert resp.media == []
+    assert resp.notes == "some notes\n123"
+    assert resp.location.latitude == LAT
+    assert resp.location.longitude == LON
