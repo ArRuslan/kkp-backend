@@ -20,8 +20,8 @@ class Donation(Model):
     date: datetime = fields.DatetimeField(auto_now_add=True)
     comment: str | None = fields.TextField(null=True, default=None)
     goal: models.DonationGoal = fields.ForeignKeyField("models.DonationGoal")
-    status: DonationStatus = fields.IntEnumField(DonationStatus)
-    paypal_id: str = fields.CharField(max_length=128)
+    status: DonationStatus = fields.IntEnumField(DonationStatus, default=DonationStatus.CREATED)
+    paypal_id: str = fields.CharField(max_length=128, default="")
 
     async def to_json(self) -> dict:
         self.goal = await self.goal
