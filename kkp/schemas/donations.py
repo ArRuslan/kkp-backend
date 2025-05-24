@@ -34,3 +34,14 @@ class DonationGoalsQuery(PaginationQuery):
 class GoalDonationsQuery(PaginationQuery):
     order: Literal["asc", "desc"] = "asc"
     order_by: Literal["id", "date"] = "id"
+
+
+class CreateDonationRequest(BaseModel):
+    amount: float
+    anonymous: bool
+    comment: str = ""
+
+
+class DonationCreatedInfo(BaseModel):
+    id: int
+    paypal_id: str

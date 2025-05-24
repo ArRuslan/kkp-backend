@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 from datetime import datetime
+from enum import IntEnum
 
 from tortoise import Model, fields
 
 from kkp import models
+
+
+class DonationStatus(IntEnum):
+    CREATED = 0
+    PROCESSED = 1
 
 
 class Donation(Model):
@@ -14,6 +20,8 @@ class Donation(Model):
     date: datetime = fields.DatetimeField(auto_now_add=True)
     comment: str | None = fields.TextField(null=True, default=None)
     goal: models.DonationGoal = fields.ForeignKeyField("models.DonationGoal")
+    status: DonationStatus = fields.IntEnumField(DonationStatus)
+    paypal_id: str = fields.CharField(max_length=128)
 
     async def to_json(self) -> dict:
         self.goal = await self.goal

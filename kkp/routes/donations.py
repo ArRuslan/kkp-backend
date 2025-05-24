@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Query
 
-from kkp.dependencies import DonationGoalDep
-from kkp.models import DonationGoal, Donation
+from kkp.dependencies import DonationGoalDep, JwtMaybeAuthUserDep
+from kkp.models import DonationGoal, Donation, DonationStatus
 from kkp.schemas.common import PaginationResponse
-from kkp.schemas.donations import DonationGoalsQuery, GoalDonationsQuery, DonationGoalInfo, DonationInfo
+from kkp.schemas.donations import DonationGoalsQuery, GoalDonationsQuery, DonationGoalInfo, DonationInfo, \
+    CreateDonationRequest, DonationCreatedInfo
+from kkp.utils.custom_exception import CustomMessageException
+from kkp.utils.paypal import PayPal
 
 router = APIRouter(prefix="/donations")
 
@@ -36,7 +39,7 @@ async def get_goal(goal: DonationGoalDep):
 
 @router.get("/{goal_id}/donations", response_model=PaginationResponse[DonationInfo])
 async def get_goal_donations(goal: DonationGoalDep, query: GoalDonationsQuery = Query()):
-    donations_query = Donation.filter(goal=goal)
+    donations_query = Donation.filter(goal=goal, status=DonationStatus.PROCESSED)
 
     order = query.order_by
     if query.order == "desc":
@@ -55,4 +58,33 @@ async def get_goal_donations(goal: DonationGoalDep, query: GoalDonationsQuery = 
     }
 
 
-# TODO: add creating donations
+@router.post("/{goal_id}/donate", response_model=DonationCreatedInfo)
+async def create_donation(user: JwtMaybeAuthUserDep, goal: DonationGoalDep, data: CreateDonationRequest):
+    paypal_id = await PayPal.create(data.amount)
+    donation = await Donation.create(
+        goal=goal,
+        status=DonationStatus.CREATED,
+        user=user if not data.anonymous else None,
+        amount=data.amount,
+        comment=data.comment,
+        paypal_id=paypal_id,
+    )
+
+    return {
+        "id": donation.id,
+        "paypal_id": paypal_id,
+    }
+
+
+@router.post("/{goal_id}/donations/{donation_id}", response_model=DonationInfo)
+async def process_payment(goal: DonationGoalDep, donation_id: int):
+    if (donation := await Donation.get_or_none(id=donation_id, goal=goal, status=DonationStatus.CREATED)) is None:
+        raise CustomMessageException("Unknown donation or it was already processed")
+
+    if await PayPal.capture(donation.paypal_id) is None:
+        raise CustomMessageException("Failed to capture payment")
+
+    donation.status = DonationStatus.PROCESSED
+    await donation.save(update_fields=["status"])
+
+    return await donation.to_json()

@@ -1,7 +1,7 @@
 from .animal import Animal, AnimalStatus
 from .animal_report import AnimalReport
 from .dialog import Dialog
-from .donation import Donation
+from .donation import Donation, DonationStatus
 from .external_auth import ExternalAuth, ExtAuthType
 from .geo_point import GeoPoint
 from .media import Media, MediaType, MediaStatus
