@@ -42,3 +42,8 @@ class RegisterDeviceRequest(BaseModel):
 class UpdateLocationRequest(BaseModel):
     latitude: float
     longitude: float
+
+
+class PasswordChangeRequest(BaseModel):
+    old_password: str
+    new_password: str

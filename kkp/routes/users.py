@@ -1,14 +1,16 @@
 from datetime import datetime
 from time import time
 
+import bcrypt
 from fastapi import APIRouter
 from pytz import UTC
 
+from kkp.config import config
 from kkp.db.point import Point
 from kkp.dependencies import JwtAuthUserDep, JwtSessionDep
 from kkp.models import Media, User, UserProfilePhoto
 from kkp.schemas.users import UserInfo, UserEditRequest, UserMfaEnableRequest, UserMfaDisableRequest, \
-    RegisterDeviceRequest, UpdateLocationRequest
+    RegisterDeviceRequest, UpdateLocationRequest, PasswordChangeRequest
 from kkp.utils.custom_exception import CustomMessageException
 from kkp.utils.mfa import Mfa
 
@@ -89,3 +91,15 @@ async def update_user_location(session: JwtSessionDep, data: UpdateLocationReque
     session.location = Point(data.longitude, data.latitude)
     session.location_time = datetime.now(UTC)
     await session.save(update_fields=["location", "location_time"])
+
+
+@router.patch("/password", response_model=UserInfo)
+async def change_user_password(user: JwtAuthUserDep, data: PasswordChangeRequest):
+    if not user.check_password(data.old_password):
+        raise CustomMessageException("Wrong password!")
+
+    user.password = bcrypt.hashpw(data.new_password.encode("utf8"), bcrypt.gensalt(config.bcrypt_rounds)).decode("utf8")
+    await user.save(update_fields=["password"])
+
+    return await user.to_json()
+

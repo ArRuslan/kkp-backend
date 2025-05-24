@@ -157,3 +157,38 @@ async def test_register_unregister_fcm(client: AsyncClient):
     await session.refresh_from_db()
     assert session.fcm_token is None
 
+
+@pytest.mark.asyncio
+async def test_change_password(client: AsyncClient):
+    user = await User.create(
+        email=f"test{int(time())}@gmail.com", password=PWD_HASH_123456789, first_name="first", last_name="last",
+    )
+    session = await Session.create(user=user)
+    token = session.to_jwt()
+
+    response = await client.post("/auth/login", json={
+        "email": user.email,
+        "password": "123456789",
+    })
+    assert response.status_code == 200, response.json()
+
+    response = await client.patch("/user/password", headers={"authorization": token}, json={
+        "old_password": "123456789",
+        "new_password": "987654321",
+    })
+    assert response.status_code == 200, response.json()
+
+    response = await client.post("/auth/login", json={
+        "email": user.email,
+        "password": "123456789",
+    })
+    assert response.status_code == 400, response.json()
+
+    response = await client.post("/auth/login", json={
+        "email": user.email,
+        "password": "987654321",
+    })
+    assert response.status_code == 200, response.json()
+
+
+

@@ -265,5 +265,5 @@ async def reset_password(data: RealResetPasswordRequest):
     if (user := await User.get_or_none(id=payload["u"])) is None:
         raise CustomMessageException("User not found!")
 
-    user.password = bcrypt.hashpw(data.new_password.encode("utf8"), bcrypt.gensalt(config.BCRYPT_ROUNDS)).decode("utf8")
+    user.password = bcrypt.hashpw(data.new_password.encode("utf8"), bcrypt.gensalt(config.bcrypt_rounds)).decode("utf8")
     await user.save(update_fields=["password"])
