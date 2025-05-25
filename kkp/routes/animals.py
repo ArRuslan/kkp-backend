@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 from pytz import UTC
 
 from kkp.dependencies import AnimalDep, JwtAuthUserDepN, JwtAuthVetDepN, JwtMaybeAuthUserDep
-from kkp.models import Animal, Media, AnimalReport, TreatmentReport
+from kkp.models import Animal, Media, AnimalReport, TreatmentReport, MediaStatus, GeoPoint
 from kkp.schemas.admin.animals import AnimalQuery
 from kkp.schemas.animal_reports import AnimalReportInfo
 from kkp.schemas.animals import AnimalInfo, EditAnimalRequest
@@ -47,25 +47,33 @@ async def get_animal(animal: AnimalDep, user: JwtMaybeAuthUserDep):
 
 @router.patch("/{animal_id}", response_model=AnimalInfo, dependencies=[JwtAuthVetDepN])
 async def edit_animal(animal: AnimalDep, data: EditAnimalRequest):
-    media_ids = data.media_ids
-    data = data.model_dump(exclude_defaults=True, exclude={"media_ids"})
-    if media_ids is not None:
-        # TODO: diff update?
-        medias = await Media.filter(id__in=data.media_ids)
-        await animal.medias.clear()
-        await animal.medias.add(*medias)
+    if data.remove_media_ids is not None:
+        medias = await Media.filter(id__in=data.remove_media_ids, status=MediaStatus.UPLOADED)
+        if medias:
+            await animal.medias.remove(*medias)
+    if data.add_media_ids is not None:
+        medias = await Media.filter(id__in=data.add_media_ids, status=MediaStatus.UPLOADED)
+        if medias:
+            await animal.medias.add(*medias)
 
-    if not data:
+    update_data = data.model_dump(exclude_defaults=True, exclude={
+        "add_media_ids", "remove_media_ids", "current_latitude", "current_longitude",
+    })
+
+    update_fields = list(update_data.keys())
+    if data.current_latitude is not None and data.current_longitude is not None:
+        location = await GeoPoint.get_near(data.current_latitude, data.current_longitude)
+        if location is None:
+            location = await GeoPoint.create(name=None, latitude=data.current_latitude, longitude=data.current_longitude)
+        animal.current_location = location
+        update_fields.append("current_location_id")
+
+    if not update_fields:
         return await animal.to_json()
 
-    update_fields = list(data.keys())
-    if "current_location" in data:
-        field_idx = update_fields.index("current_location")
-        update_fields[field_idx] += "_id"
-
-    data["updated_at"] = datetime.now(UTC)
-    animal.update_from_dict(data)
-    await animal.save(update_fields=list(data.keys()))
+    update_data["updated_at"] = datetime.now(UTC)
+    animal.update_from_dict(update_data)
+    await animal.save(update_fields=update_fields)
 
     return await animal.to_json()
 

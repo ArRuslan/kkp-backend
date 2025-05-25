@@ -6,7 +6,7 @@ from pytz import UTC
 from kkp.config import FCM
 from kkp.db.point import Point, STDistanceSphere
 from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, AnimalReportDep, JwtAuthVetDepN, JwtMaybeAuthUserDep
-from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, UserRole, Session
+from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, UserRole, Session, MediaStatus
 from kkp.schemas.animal_reports import CreateAnimalReportsRequest, AnimalReportInfo, RecentReportsQuery, \
     MyAnimalReportsQuery
 from kkp.schemas.common import PaginationResponse
@@ -32,8 +32,10 @@ async def create_animal_report(user: JwtMaybeAuthUserDep, data: CreateAnimalRepo
         raise CustomMessageException("You need to specify either animal id or name and breed!", 400)
 
     report = await AnimalReport.create(reported_by=user, animal=animal, notes=data.notes, location=location)
-    media = await Media.filter(id__in=data.media_ids, uploaded_by=user)
+    media = await Media.filter(id__in=data.media_ids, uploaded_by=user, status=MediaStatus.UPLOADED)
     await report.media.add(*media)
+
+    # TODO: add media to animal
 
     session_query = Session.filter(
         location_time__gt=datetime.now(UTC) - timedelta(days=14), fcm_token__not=None,

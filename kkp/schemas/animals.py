@@ -32,5 +32,7 @@ class EditAnimalRequest(BaseModel):
     breed: str | None = None
     status: AnimalStatus | None = None
     description: str | None = None
-    media_ids: list[int] | None = None
-    current_location: GeoPointInfo | None = None
+    add_media_ids: list[int] | None = None
+    remove_media_ids: list[int] | None = None
+    current_latitude: float | None = None
+    current_longitude: float | None = None
