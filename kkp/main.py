@@ -10,7 +10,6 @@ from tortoise import generate_config
 from tortoise.contrib.fastapi import RegisterTortoise
 
 from .config import config, S3
-from .migrate import migrate
 from .routes import auth, animals, media, users, subscriptions, animal_reports, admin, messages, treatment_reports, \
     vet_clinics, volunteer_requests
 from .routes.admin import donations
@@ -19,9 +18,6 @@ from .utils.custom_exception import CustomMessageException
 
 @asynccontextmanager
 async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
-    is_testing = environ.get("TORTOISE_TESTING") == "1"
-    await migrate()
-
     policy_retries = 3
     for i in range(policy_retries):
         try:
@@ -42,6 +38,7 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
             from asyncio import sleep
             await sleep(1)
 
+    is_testing = environ.get("TORTOISE_TESTING") == "1"
     orm_config = generate_config(
         config.db_connection_string,
         app_modules={"models": ["kkp.models"]},
