@@ -1,10 +1,12 @@
 import pytest
 from httpx import AsyncClient
 
-from kkp.models import UserRole
+from kkp.models import UserRole, MediaType
 from kkp.schemas.animal_reports import AnimalReportInfo
 from kkp.schemas.common import PaginationResponse
+from kkp.schemas.media import CreateMediaUploadResponse, MediaInfo
 from tests.conftest import create_token
+from tests.test_media import IMG_1x1_PIXEL_RED
 
 LON = 42.42424242
 LAT = 24.24242424
@@ -219,6 +221,51 @@ async def test_create_animal_report_no_auth(client: AsyncClient):
     assert resp.assigned_to is None
     assert resp.reported_by is None
     assert resp.media == []
+    assert resp.notes == "some notes\n123"
+    assert resp.location.latitude == LAT
+    assert resp.location.longitude == LON
+
+
+@pytest.mark.asyncio
+async def test_create_animal_report_no_auth_media(client: AsyncClient):
+    response = await client.post("/media", json={
+        "type": MediaType.PHOTO.value,
+        "size": len(IMG_1x1_PIXEL_RED),
+    })
+    assert response.status_code == 200, response.json()
+    resp = CreateMediaUploadResponse(**response.json())
+    media_id = resp.id
+
+    async with AsyncClient() as cl:
+        upload_response = await cl.put(resp.upload_url, content=IMG_1x1_PIXEL_RED)
+        assert upload_response.status_code == 200
+
+    response = await client.post(f"/media/{media_id}/finalize")
+    assert response.status_code == 200, response.json()
+    resp = MediaInfo(**response.json())
+
+    async with AsyncClient() as cl:
+        media_response = await cl.get(resp.url)
+        assert media_response.status_code == 200
+        assert await media_response.aread() == IMG_1x1_PIXEL_RED
+
+    response = await client.post("/animal-reports", json={
+        "name": "test animal 1",
+        "breed": "idk breed 1",
+        "notes": "some notes\n123",
+        "latitude": LAT,
+        "longitude": LON,
+        "media_ids": [media_id],
+    })
+    assert response.status_code == 200, response.json()
+    resp = AnimalReportInfo(**response.json())
+    assert resp.animal is not None
+    assert resp.animal.name == "test animal 1"
+    assert resp.animal.breed == "idk breed 1"
+    assert len(resp.media) == 1
+    assert resp.media[0].id == media_id
+    assert resp.assigned_to is None
+    assert resp.reported_by is None
     assert resp.notes == "some notes\n123"
     assert resp.location.latitude == LAT
     assert resp.location.longitude == LON

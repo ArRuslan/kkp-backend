@@ -22,7 +22,7 @@ class TreatmentReport(Model):
 
         return {
             "id": self.id,
-            "report": await self.report.to_json(),
+            "animal_report": await self.report.to_json(),
             "created_at": int(self.created_at.timestamp()),
             "description": self.description,
             "money_spent": self.money_spent,
