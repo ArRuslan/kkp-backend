@@ -32,7 +32,9 @@ class Animal(Model):
     medias: fields.ManyToManyRelation[models.Media] = fields.ManyToManyField("models.Media")
     current_location: models.GeoPoint | None = fields.ForeignKeyField("models.GeoPoint", null=True)  # ??
     updated_at: datetime = fields.DatetimeField(auto_now_add=True)
-    gender: AnimalGender = fields.IntEnumField(AnimalGender, default=AnimalGender.UNKNOWN)
+    # TODO: change back to unknown, i changed it in the first place to make aerich generate new migration
+    #  that hopefully fixes OperationalError: (1060, "Duplicate column name 'gender'")
+    gender: AnimalGender = fields.IntEnumField(AnimalGender, default=AnimalGender.MALE)
 
     async def to_json(self, current_user: models.User | None = None) -> dict:
         total_media_count = await self.medias.all().count()

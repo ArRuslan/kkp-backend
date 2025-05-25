@@ -1,17 +1,16 @@
 from contextlib import asynccontextmanager
-from pathlib import Path
 from os import environ
 
-from aerich import Command
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from httpx import RemoteProtocolError
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
-from tortoise import Tortoise, generate_config
+from tortoise import generate_config
 from tortoise.contrib.fastapi import RegisterTortoise
 
 from .config import config, S3
+from .migrate import migrate
 from .routes import auth, animals, media, users, subscriptions, animal_reports, admin, messages, treatment_reports, \
     vet_clinics, volunteer_requests
 from .routes.admin import donations
@@ -21,18 +20,7 @@ from .utils.custom_exception import CustomMessageException
 @asynccontextmanager
 async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
     is_testing = environ.get("TORTOISE_TESTING") == "1"
-    if not is_testing:
-        command = Command({
-            "connections": {"default": config.db_connection_string},
-            "apps": {"models": {"models": ["kkp.models", "aerich.models"], "default_connection": "default"}},
-        }, location=config.migrations_dir)
-        await command.init()
-        if Path(config.migrations_dir).exists():
-            await command.migrate()
-            await command.upgrade(True)
-        else:
-            await command.init_db(True)
-        await Tortoise.close_connections()
+    await migrate()
 
     policy_retries = 3
     for i in range(policy_retries):
