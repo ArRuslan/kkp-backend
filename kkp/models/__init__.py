@@ -13,3 +13,4 @@ from .user_profile_photo import UserProfilePhoto
 from .vet_clinic import VetClinic
 from .volunteer_request import VolunteerRequest, VolRequestStatus
 from .donation_goal import DonationGoal
+from .animal_update import AnimalUpdate, AnimalUpdateType

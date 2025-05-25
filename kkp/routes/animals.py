@@ -4,7 +4,8 @@ from fastapi import APIRouter, Query
 from pytz import UTC
 
 from kkp.dependencies import AnimalDep, JwtAuthUserDepN, JwtAuthVetDepN, JwtMaybeAuthUserDep
-from kkp.models import Animal, Media, AnimalReport, TreatmentReport, MediaStatus, GeoPoint
+from kkp.models import Animal, Media, AnimalReport, TreatmentReport, MediaStatus, GeoPoint, AnimalUpdateType, \
+    AnimalUpdate
 from kkp.schemas.admin.animals import AnimalQuery
 from kkp.schemas.animal_reports import AnimalReportInfo
 from kkp.schemas.animals import AnimalInfo, EditAnimalRequest
@@ -74,6 +75,8 @@ async def edit_animal(animal: AnimalDep, data: EditAnimalRequest):
     update_data["updated_at"] = datetime.now(UTC)
     animal.update_from_dict(update_data)
     await animal.save(update_fields=update_fields)
+
+    await AnimalUpdate.create(animal=animal, type=AnimalUpdateType.ANIMAL)
 
     return await animal.to_json()
 

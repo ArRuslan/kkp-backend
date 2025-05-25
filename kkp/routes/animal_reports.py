@@ -6,7 +6,8 @@ from pytz import UTC
 from kkp.config import FCM
 from kkp.db.point import Point, STDistanceSphere
 from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, AnimalReportDep, JwtAuthVetDepN, JwtMaybeAuthUserDep
-from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, UserRole, Session, MediaStatus
+from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, UserRole, Session, MediaStatus, \
+    AnimalUpdate, AnimalUpdateType
 from kkp.schemas.animal_reports import CreateAnimalReportsRequest, AnimalReportInfo, RecentReportsQuery, \
     MyAnimalReportsQuery
 from kkp.schemas.common import PaginationResponse
@@ -35,6 +36,8 @@ async def create_animal_report(user: JwtMaybeAuthUserDep, data: CreateAnimalRepo
     media = await Media.filter(id__in=data.media_ids, uploaded_by=user, status=MediaStatus.UPLOADED)
     await report.media.add(*media)
     await animal.medias.add(*media)
+
+    await AnimalUpdate.create(animal=animal, type=AnimalUpdateType.REPORT, animal_report=report)
 
     session_query = Session.filter(
         location_time__gt=datetime.now(UTC) - timedelta(days=14), fcm_token__not=None,
