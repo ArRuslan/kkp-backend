@@ -17,6 +17,12 @@ class AnimalStatus(IntEnum):
     ADOPTED = 5
 
 
+class AnimalGender(IntEnum):
+    UNKNOWN = 0
+    MALE = 1
+    FEMALE = 1
+
+
 class Animal(Model):
     id: int = fields.BigIntField(pk=True)
     name: str = fields.CharField(max_length=128)
@@ -26,6 +32,7 @@ class Animal(Model):
     medias: fields.ManyToManyRelation[models.Media] = fields.ManyToManyField("models.Media")
     current_location: models.GeoPoint | None = fields.ForeignKeyField("models.GeoPoint", null=True)  # ??
     updated_at: datetime = fields.DatetimeField(auto_now_add=True)
+    gender: AnimalGender = fields.IntEnumField(AnimalGender, default=AnimalGender.UNKNOWN)
 
     async def to_json(self, current_user: models.User | None = None) -> dict:
         total_media_count = await self.medias.all().count()
@@ -43,6 +50,7 @@ class Animal(Model):
             "name": self.name,
             "breed": self.breed,
             "status": self.status,
+            "gender": self.gender,
             "description": self.description,
             "media": {
                 "count": total_media_count,

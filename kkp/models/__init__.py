@@ -1,4 +1,4 @@
-from .animal import Animal, AnimalStatus
+from .animal import Animal, AnimalStatus, AnimalGender
 from .animal_report import AnimalReport
 from .dialog import Dialog
 from .donation import Donation, DonationStatus

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from kkp.models import AnimalStatus
+from kkp.models import AnimalStatus, AnimalGender
 from kkp.schemas.common import PaginationResponse, GeoPointInfo
 from kkp.schemas.media import MediaInfo
 
@@ -10,21 +10,13 @@ class AnimalInfo(BaseModel):
     name: str
     breed: str
     status: AnimalStatus
+    gender: AnimalGender
     description: str
     media: PaginationResponse[MediaInfo]
     current_location: GeoPointInfo | None
     updated_at: int
     # `subscribed` field is only returned in /subscriptions, /animals and /animals/{animal_id} routes
     subscribed: bool
-
-
-class CreateAnimalRequest(BaseModel):
-    name: str
-    breed: str
-    status: AnimalStatus
-    description: str
-    media_ids: list[int]
-    current_location: GeoPointInfo | None
 
 
 class EditAnimalRequest(BaseModel):
@@ -36,3 +28,4 @@ class EditAnimalRequest(BaseModel):
     remove_media_ids: list[int] | None = None
     current_latitude: float | None = None
     current_longitude: float | None = None
+    gender: AnimalGender | None = None

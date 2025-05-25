@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from kkp.models import AnimalGender
 from kkp.schemas.animals import AnimalInfo
 from kkp.schemas.common import GeoPointInfo, PaginationQuery
 from kkp.schemas.media import MediaInfo
@@ -17,6 +18,7 @@ class CreateAnimalReportsRequest(BaseModel):
     latitude: float
     longitude: float
     media_ids: list[int]
+    gender: AnimalGender = AnimalGender.UNKNOWN
 
 
 class AnimalReportInfo(BaseModel):
