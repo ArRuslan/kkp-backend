@@ -34,8 +34,7 @@ async def create_animal_report(user: JwtMaybeAuthUserDep, data: CreateAnimalRepo
     report = await AnimalReport.create(reported_by=user, animal=animal, notes=data.notes, location=location)
     media = await Media.filter(id__in=data.media_ids, uploaded_by=user, status=MediaStatus.UPLOADED)
     await report.media.add(*media)
-
-    # TODO: add media to animal
+    await animal.medias.add(*media)
 
     session_query = Session.filter(
         location_time__gt=datetime.now(UTC) - timedelta(days=14), fcm_token__not=None,

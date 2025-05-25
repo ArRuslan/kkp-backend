@@ -269,3 +269,6 @@ async def test_create_animal_report_no_auth_media(client: AsyncClient):
     assert resp.notes == "some notes\n123"
     assert resp.location.latitude == LAT
     assert resp.location.longitude == LON
+    assert resp.animal.media.count == 1
+    assert len(resp.animal.media.result) == 1
+    assert resp.animal.media.result[0].id == media_id
