@@ -1,17 +1,31 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 
 from tortoise import fields, Model
 
 from kkp import models
+from kkp.db.int_flag import IntFlagField
 
 
 class VolRequestStatus(IntEnum):
     REQUESTED = 1
     APPROVED = 2
     REFUSED = 3
+
+
+class VolAvailability(IntFlag):
+    WEEKDAYS = 1 << 0
+    WEEKENDS = 1 << 1
+
+
+class VolHelp(IntFlag):
+    SHELTER = 1 << 0
+    CLINIC_DELIVERY = 1 << 1
+    ONSITE_VISIT = 1 << 2
+    MEDICAL_CARE = 1 << 3
+    INFORMATION = 1 << 4
 
 
 class VolunteerRequest(Model):
@@ -23,6 +37,15 @@ class VolunteerRequest(Model):
     review_text: str | None = fields.TextField(null=True, default=None)
     medias: fields.ManyToManyRelation[models.Media] = fields.ManyToManyField("models.Media")
     status: VolRequestStatus = fields.IntEnumField(VolRequestStatus, default=VolRequestStatus.REQUESTED)
+    full_name: str = fields.CharField(max_length=128)
+    has_vehicle: bool = fields.BooleanField()
+    phone_number: str = fields.CharField(max_length=64)
+    city: str = fields.CharField(max_length=128)
+    availability: VolAvailability = IntFlagField(VolAvailability)
+    help: VolHelp = IntFlagField(VolHelp)
+    telegram_username: str | None = fields.CharField(max_length=128, null=True, default=None)
+    viber_phone: str | None = fields.CharField(max_length=64, null=True, default=None)
+    whatsapp_phone: str | None = fields.CharField(max_length=64, null=True, default=None)
 
     async def to_json(self) -> dict:
         self.user = await self.user
@@ -39,4 +62,13 @@ class VolunteerRequest(Model):
                 for media in self.medias
             ],
             "status": self.status,
+            "full_name": self.full_name,
+            "has_vehicle": self.has_vehicle,
+            "phone_number": self.phone_number,
+            "city": self.city,
+            "availability": self.availability,
+            "help": self.help,
+            "telegram_username": self.telegram_username,
+            "viber_phone": self.viber_phone,
+            "whatsapp_phone": self.whatsapp_phone,
         }

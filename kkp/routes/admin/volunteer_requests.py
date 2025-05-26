@@ -57,6 +57,20 @@ async def approve_volunteer_request(vol_request: AdminVolunteerRequestDep, data:
     vol_request.reviewed_at = datetime.now(UTC)
     await vol_request.save(update_fields=["status", "review_text", "reviewed_at"])
 
+    update_user = []
+    if vol_request.user.telegram_username is None and vol_request.telegram_username is not None:
+        vol_request.user.telegram_username = vol_request.telegram_username
+        update_user.append("telegram_username")
+    if vol_request.user.viber_phone is None and vol_request.viber_phone is not None:
+        vol_request.user.viber_phone = vol_request.viber_phone
+        update_user.append("viber_phone")
+    if vol_request.user.whatsapp_phone is None and vol_request.whatsapp_phone is not None:
+        vol_request.user.whatsapp_phone = vol_request.whatsapp_phone
+        update_user.append("whatsapp_phone")
+
+    if update_user:
+        await vol_request.user.save(update_fields=update_user)
+
     await send_notification(
         vol_request.user,
         "Volunteer request approved",

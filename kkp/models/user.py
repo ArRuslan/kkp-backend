@@ -25,6 +25,9 @@ class User(Model):
     role: UserRole = fields.IntEnumField(UserRole, default=UserRole.REGULAR)
     subscriptions: fields.ManyToManyRelation[models.Animal] = fields.ManyToManyField("models.Animal")
     mfa_key: str | None = fields.CharField(max_length=32, null=True, default=None)
+    telegram_username: str | None = fields.CharField(max_length=128, null=True, default=None)
+    viber_phone: str | None = fields.CharField(max_length=64, null=True, default=None)
+    whatsapp_phone: str | None = fields.CharField(max_length=64, null=True, default=None)
 
     def check_password(self, password: str) -> bool:
         if self.password is None:
@@ -39,6 +42,9 @@ class User(Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "photo": photo.photo.to_json() if photo is not None else None,
+            "telegram_username": self.telegram_username,
+            "viber_phone": self.viber_phone,
+            "whatsapp_phone": self.whatsapp_phone,
         }
 
     async def to_json(self) -> dict:
@@ -52,4 +58,7 @@ class User(Model):
             "role": self.role,
             "mfa_enabled": bool(self.mfa_key),
             "photo": photo.photo.to_json() if photo is not None else None,
+            "telegram_username": self.telegram_username,
+            "viber_phone": self.viber_phone,
+            "whatsapp_phone": self.whatsapp_phone,
         }

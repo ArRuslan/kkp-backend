@@ -1,7 +1,11 @@
 from pydantic import BaseModel, EmailStr, Field
+from pydantic_extra_types.phone_numbers import PhoneNumber
 
 from kkp.models import UserRole
 from kkp.schemas.media import MediaInfo
+
+
+PhoneNumber.phone_format = "E164"
 
 
 class UserBaseInfo(BaseModel):
@@ -9,6 +13,9 @@ class UserBaseInfo(BaseModel):
     first_name: str
     last_name: str
     photo: MediaInfo | None
+    telegram_username: str | None
+    viber_phone: PhoneNumber | None
+    whatsapp_phone: PhoneNumber | None
 
 
 class UserInfo(UserBaseInfo):
@@ -22,6 +29,9 @@ class UserEditRequest(BaseModel):
     last_name: str | None = None
     email: EmailStr | None = None
     photo_id: int | None = None
+    telegram_username: str | None = None
+    viber_phone: PhoneNumber | None = None
+    whatsapp_phone: PhoneNumber | None = None
 
 
 class UserMfaEnableRequest(BaseModel):

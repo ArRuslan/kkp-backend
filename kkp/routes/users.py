@@ -36,6 +36,7 @@ async def update_user_info(user: JwtAuthUserDep, data: UserEditRequest):
             if (media := await Media.get_or_none(id=data.photo_id, uploaded_by=user)) is None:
                 raise CustomMessageException("Media does not exist!")
             await UserProfilePhoto.update_or_create(user=user, defaults={"photo": media})
+
     if update_data:
         await user.update_from_dict(update_data).save(update_fields=list(update_data.keys()))
 
