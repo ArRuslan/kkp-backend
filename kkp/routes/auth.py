@@ -141,7 +141,7 @@ async def google_auth_callback(data: GoogleOAuthData):
     existing_auth = await ExternalAuth.get_or_none(type=ExtAuthType.GOOGLE, external_id=data["id"]).select_related("user")
     if existing_auth is not None:
         existing_auth.access_token = token_data["access_token"]
-        existing_auth.refresh_token = token_data["refresh_token"]
+        existing_auth.refresh_token = token_data.get("refresh_token", "")
         existing_auth.token_expires_at = int(time() + token_data["expires_in"])
         await existing_auth.save(update_fields=["access_token", "refresh_token", "token_expires_at"])
 
@@ -156,7 +156,7 @@ async def google_auth_callback(data: GoogleOAuthData):
             type="google",
             external_id=data["id"],
             access_token=token_data["access_token"],
-            refresh_token=token_data["refresh_token"],
+            refresh_token=token_data.get("refresh_token", ""),
             token_expires_at=int(time() + token_data["expires_in"]),
         )
     elif state is not None and existing_auth is not None:
@@ -175,7 +175,7 @@ async def google_auth_callback(data: GoogleOAuthData):
             type=ExtAuthType.GOOGLE,
             external_id=data["id"],
             access_token=token_data["access_token"],
-            refresh_token=token_data["refresh_token"],
+            refresh_token=token_data.get("refresh_token", ""),
             token_expires_at=int(time() + token_data["expires_in"]),
         )
     elif state is None and existing_auth is not None:
