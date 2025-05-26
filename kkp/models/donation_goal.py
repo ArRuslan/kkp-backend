@@ -12,7 +12,7 @@ class DonationGoal(Model):
     need_amount: float = fields.FloatField()
     got_amount: float = fields.FloatField(default=0)
     created_at: datetime = fields.DatetimeField(auto_now_add=True)
-    ended_at: datetime | None = fields.DatetimeField(auto_now_add=True, null=True, default=None)
+    ended_at: datetime | None = fields.DatetimeField(null=True, default=None)
 
     def to_json(self) -> dict:
         return {

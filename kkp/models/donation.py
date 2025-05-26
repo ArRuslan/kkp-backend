@@ -32,7 +32,7 @@ class Donation(Model):
             "id": self.id,
             "user": await self.user.to_json_base() if self.user else None,
             "amount": self.amount,
-            "date": self.date,
+            "date": int(self.date.timestamp()),
             "comment": self.comment,
             "goal": self.goal.to_json(),
         }

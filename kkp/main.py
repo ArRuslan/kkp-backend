@@ -11,8 +11,7 @@ from tortoise.contrib.fastapi import RegisterTortoise
 
 from .config import config, S3
 from .routes import auth, animals, media, users, subscriptions, animal_reports, admin, messages, treatment_reports, \
-    vet_clinics, volunteer_requests
-from .routes.admin import donations
+    vet_clinics, volunteer_requests, donations
 from .utils.custom_exception import CustomMessageException
 
 

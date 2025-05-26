@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Query
+from pytz import UTC
 
 from kkp.dependencies import DonationGoalDep, JwtMaybeAuthUserDep
 from kkp.models import DonationGoal, Donation, DonationStatus
@@ -60,6 +63,9 @@ async def get_goal_donations(goal: DonationGoalDep, query: GoalDonationsQuery = 
 
 @router.post("/{goal_id}/donate", response_model=DonationCreatedInfo)
 async def create_donation(user: JwtMaybeAuthUserDep, goal: DonationGoalDep, data: CreateDonationRequest):
+    if goal.ended_at is not None:
+        raise CustomMessageException("This donation goal ended")
+
     paypal_id = await PayPal.create(data.amount)
     donation = await Donation.create(
         goal=goal,
@@ -86,5 +92,13 @@ async def process_payment(goal: DonationGoalDep, donation_id: int):
 
     donation.status = DonationStatus.PROCESSED
     await donation.save(update_fields=["status"])
+
+    update_goal = ["got_amount"]
+    goal.got_amount += donation.amount
+    if goal.got_amount >= goal.need_amount:
+        goal.ended_at = datetime.now(UTC)
+        update_goal.append("ended_at")
+
+    await goal.save(update_fields=update_goal)
 
     return await donation.to_json()

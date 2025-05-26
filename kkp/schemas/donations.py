@@ -21,7 +21,7 @@ class DonationInfo(BaseModel):
     id: int
     user: UserBaseInfo | None
     amount: float
-    date: datetime
+    date: int
     comment: str
     goal: DonationGoalInfo
 

@@ -14,8 +14,8 @@ async def create_goal(data: DonationGoalCreate):
     return goal.to_json()
 
 
-@router.post("/{goal_id}", response_model=DonationGoalInfo)
-async def create_goal(goal: DonationGoalDep, data: DonationGoalUpdate):
+@router.patch("/{goal_id}", response_model=DonationGoalInfo)
+async def update_goal(goal: DonationGoalDep, data: DonationGoalUpdate):
     updates = data.model_dump(exclude_defaults=True)
     if updates:
         await goal.update_from_dict(updates).save(update_fields=list(updates.keys()))
