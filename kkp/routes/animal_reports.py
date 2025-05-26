@@ -100,9 +100,13 @@ async def get_my_reports(user: JwtAuthVetDep, query: MyAnimalReportsQuery = Quer
 
 
 @router.get("/{report_id}", response_model=AnimalReportInfo)
-async def get_animal_report(user: JwtAuthUserDep, report: AnimalReportDep):
-    if user.role <= UserRole.REGULAR and report.reported_by_id != user.id:
-        raise CustomMessageException("Insufficient privileges.", 403)
+async def get_animal_report(user: JwtMaybeAuthUserDep, report: AnimalReportDep):
+    if user is not None:
+        if user.role <= UserRole.REGULAR and report.reported_by_id != user.id:
+            raise CustomMessageException("Insufficient privileges.", 403)
+    else:
+        if report.reported_by_id is not None:
+            raise CustomMessageException("Insufficient privileges.", 403)
 
     return await report.to_json()
 

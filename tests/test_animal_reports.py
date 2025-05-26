@@ -212,18 +212,22 @@ async def test_create_animal_report_no_auth(client: AsyncClient):
         "media_ids": [],
     })
     assert response.status_code == 200, response.json()
-    resp = AnimalReportInfo(**response.json())
-    assert resp.animal is not None
-    assert resp.animal.name == "test animal 1"
-    assert resp.animal.breed == "idk breed 1"
-    assert resp.animal.media.count == 0
-    assert len(resp.animal.media.result) == 0
-    assert resp.assigned_to is None
-    assert resp.reported_by is None
-    assert resp.media == []
-    assert resp.notes == "some notes\n123"
-    assert resp.location.latitude == LAT
-    assert resp.location.longitude == LON
+    report = AnimalReportInfo(**response.json())
+    assert report.animal is not None
+    assert report.animal.name == "test animal 1"
+    assert report.animal.breed == "idk breed 1"
+    assert report.animal.media.count == 0
+    assert len(report.animal.media.result) == 0
+    assert report.assigned_to is None
+    assert report.reported_by is None
+    assert report.media == []
+    assert report.notes == "some notes\n123"
+    assert report.location.latitude == LAT
+    assert report.location.longitude == LON
+
+    response = await client.get(f"/animal-reports/{report.id}")
+    assert response.status_code == 200, response.json()
+    assert AnimalReportInfo(**response.json()) == report
 
 
 @pytest.mark.asyncio
