@@ -191,6 +191,7 @@ async def google_auth_callback(data: GoogleOAuthData):
     return {
         "token": session.to_jwt(),
         "expires_at": int(time() + config.jwt_ttl),
+        "connect": False,
     }
 
 
