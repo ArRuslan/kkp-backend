@@ -1,6 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, EmailStr
+from pydantic_extra_types.phone_numbers import PhoneNumber
 
 from kkp.models import UserRole
 from kkp.schemas.common import PaginationQuery
