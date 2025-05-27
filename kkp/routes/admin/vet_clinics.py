@@ -75,14 +75,14 @@ async def edit_vet_clinic(user: JwtAuthVetAdminDep, clinic: AdminVetClinicDep, d
         to_update.append("name")
     if user.role == UserRole.GLOBAL_ADMIN and data.admin_id is not None:
         if data.admin_id > 0:
-            if clinic.admin is not None:
-                clinic.admin = None
-                to_update.append("admin_id")
-        else:
             if (new_admin := await User.get_or_none(id=data.admin_id)) is None:
                 raise CustomMessageException("Unknown user.", 404)
             clinic.admin = new_admin
             to_update.append("admin_id")
+        else:
+            if clinic.admin is not None:
+                clinic.admin = None
+                to_update.append("admin_id")
     if data.latitude is not None and data.longitude is not None:
         clinic.location.name = None
         await clinic.location.save(update_fields=["name"])
@@ -129,12 +129,12 @@ async def add_clinic_employee(user: JwtAuthVetAdminDep, clinic: AdminVetClinicDe
     await clinic.employees.add(emp_user)
 
 
-@router.delete("/{vet_clinic_id}/employees", status_code=204)
-async def remove_clinic_employee(user: JwtAuthVetAdminDep, clinic: AdminVetClinicDep, data: EditEmployeeRequest):
+@router.delete("/{vet_clinic_id}/employees/{employee_id}", status_code=204)
+async def remove_clinic_employee(user: JwtAuthVetAdminDep, clinic: AdminVetClinicDep, employee_id: int):
     if user.role < UserRole.GLOBAL_ADMIN and clinic.admin != user:
         raise CustomMessageException("Unknown vet clinic.", 404)
 
-    if (emp_user := await User.get_or_none(email=data.email)) is None:
+    if (emp_user := await User.get_or_none(id=employee_id)) is None:
         raise CustomMessageException("Unknown user.", 404)
 
     await clinic.employees.remove(emp_user)

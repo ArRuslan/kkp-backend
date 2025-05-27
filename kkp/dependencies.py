@@ -118,7 +118,7 @@ TreatmentReportDep = Annotated[TreatmentReport, Depends(treatment_report_dep)]
 
 
 async def admin_vet_clinic_dep(vet_clinic_id: int, _: JwtAuthVetAdminDep) -> VetClinic:
-    if (clinic := await VetClinic.get_or_none(id=vet_clinic_id).select_related("admin")) is None:
+    if (clinic := await VetClinic.get_or_none(id=vet_clinic_id).select_related("admin", "location")) is None:
         raise CustomMessageException("Unknown vet clinic.", 404)
 
     return clinic
