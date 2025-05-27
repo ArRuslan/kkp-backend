@@ -65,4 +65,4 @@ async def test_send_volunteer_request_already_volunteer(client: AsyncClient):
     user_token = await create_token(UserRole.VOLUNTEER)
 
     response = await client.post(f"/volunteer-requests", headers={"authorization": user_token}, json=VOL_REQUEST_DATA)
-    assert response.status_code == 200, response.json()
+    assert response.status_code == 400, response.json()

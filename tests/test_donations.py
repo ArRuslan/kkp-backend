@@ -6,14 +6,8 @@ from kkp.models import UserRole, DonationGoal
 from kkp.schemas.common import PaginationResponse
 from kkp.schemas.donations import DonationGoalInfo, DonationInfo, DonationCreatedInfo
 from kkp.utils.paypal import PayPal
-from tests.conftest import create_token
+from tests.conftest import create_token, httpx_mock_decorator
 from tests.paypal_mock import PaypalMockState
-
-httpx_mock_decorator = pytest.mark.httpx_mock(
-    assert_all_requests_were_expected=False,
-    assert_all_responses_were_requested=False,
-    can_send_already_matched_responses=True,
-)
 
 
 class PaginatedGoalsResponse(PaginationResponse[DonationGoalInfo]):

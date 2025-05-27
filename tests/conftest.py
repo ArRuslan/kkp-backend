@@ -2,6 +2,7 @@ from os import environ, urandom
 from time import time
 from typing import AsyncGenerator
 
+import pytest
 import pytest_asyncio
 from aiodocker import Docker, DockerError
 from asgi_lifespan import LifespanManager
@@ -33,6 +34,12 @@ from kkp.models import UserRole, User, Session
 
 
 PWD_HASH_123456789 = hashpw(b"123456789", gensalt(4)).decode("utf8")
+
+httpx_mock_decorator = pytest.mark.httpx_mock(
+    assert_all_requests_were_expected=False,
+    assert_all_responses_were_requested=False,
+    can_send_already_matched_responses=True,
+)
 
 
 @pytest_asyncio.fixture

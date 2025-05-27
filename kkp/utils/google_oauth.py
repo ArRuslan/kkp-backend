@@ -6,6 +6,10 @@ from kkp.config import config
 from kkp.utils.custom_exception import CustomMessageException
 
 
+GOOGLE_TOKEN_URL = "https://accounts.google.com/o/oauth2/token"
+GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v1/userinfo"
+
+
 class GoogleOAuthResponse(TypedDict):
     id: str
     email: str
@@ -29,11 +33,11 @@ async def authorize_google(code: str) -> tuple[GoogleOAuthResponse, GoogleOAuthT
     }
 
     async with AsyncClient() as client:
-        resp = await client.post("https://accounts.google.com/o/oauth2/token", json=data)
+        resp = await client.post(GOOGLE_TOKEN_URL, json=data)
         if "error" in resp.json():
             raise CustomMessageException(f"Error: {resp.json()['error']}")
         token_data = resp.json()
 
-        info_resp = await client.get("https://www.googleapis.com/oauth2/v1/userinfo",
+        info_resp = await client.get(GOOGLE_USERINFO_URL,
                                      headers={"Authorization": f"Bearer {token_data['access_token']}"})
         return info_resp.json(), token_data
