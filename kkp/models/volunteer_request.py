@@ -59,7 +59,7 @@ class VolunteerRequest(Model):
             "review_text": self.review_text,
             "medias": [
                 media.to_json()
-                for media in self.medias
+                for media in await self.medias.filter().limit(10)
             ],
             "status": self.status,
             "full_name": self.full_name,

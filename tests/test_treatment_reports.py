@@ -37,7 +37,7 @@ async def test_create_treatment_report(client: AsyncClient):
     })
     assert response.status_code == 200, response.json()
     report = TreatmentReportInfo(**response.json())
-    exclude = {"updated_at", "assigned_to"}
+    exclude = {"updated_at": True, "assigned_to": True, "animal": {"updated_at": True}}
     assert report.animal_report.model_dump(exclude=exclude) == animal_report.model_dump(exclude=exclude)
     assert report.vet_clinic is None
     assert report.money_spent == 1234.5

@@ -14,9 +14,9 @@ class VolunteerRequestInfo(BaseModel):
     id: int
     user: UserBaseInfo
     created_at: int
-    reviewed_at: int
+    reviewed_at: int | None
     text: str
-    review_text: str
+    review_text: str | None
     medias: list[MediaInfo]
     status: VolRequestStatus
     full_name: str
