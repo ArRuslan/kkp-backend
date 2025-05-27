@@ -46,7 +46,7 @@ async def get_animal_report(report: AnimalReportDep):
     return await report.to_json()
 
 
-@router.patch("/{report_id}", response_model=AnimalInfo)
+@router.patch("/{report_id}", response_model=AnimalReportInfo)
 async def edit_animal_report(report: AnimalReportDep, data: EditAnimalReportRequest):
     update_fields = []
     if data.assigned_to_id:
