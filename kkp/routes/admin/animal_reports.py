@@ -4,7 +4,6 @@ from kkp.dependencies import JwtAuthAdminDepN, AnimalReportDep
 from kkp.models import AnimalReport, User
 from kkp.schemas.admin.animal_reports import EditAnimalReportRequest, AnimalReportsQuery
 from kkp.schemas.animal_reports import AnimalReportInfo
-from kkp.schemas.animals import AnimalInfo
 from kkp.schemas.common import PaginationResponse
 from kkp.utils.custom_exception import CustomMessageException
 

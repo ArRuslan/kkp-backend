@@ -62,8 +62,7 @@ async def edit_animal(animal: AdminAnimalDep, data: EditAnimalRequest):
     if data.current_latitude is not None and data.current_longitude is not None:
         location = await GeoPoint.get_near(data.current_latitude, data.current_longitude)
         if location is None:
-            location = await GeoPoint.create(name=None, latitude=data.current_latitude,
-                                             longitude=data.current_longitude)
+            location = await GeoPoint.create(latitude=data.current_latitude, longitude=data.current_longitude)
         animal.current_location = location
         update_fields.append("current_location_id")
 

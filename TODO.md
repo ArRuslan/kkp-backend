@@ -3,7 +3,7 @@ TODO:
   - [x] Animal reports (when animal is found) creation
   - [x] Send notification to volunteers and vets when animal report is created
   - [x] Recent near reports viewing for volunteers and vets
-  - [ ] Recently updated animals viewing for all users - ???
+  - [x] Recently updated animals viewing for all users - ???
   - [x] Auth via google
   - [x] Two-factor authentication
   - [x] Specific animal reports viewing
@@ -15,13 +15,11 @@ TODO:
   - [x] Admin CRUD (but without creation) for animal reports
   - [x] Admin CRUD (but without creation) for treatment reports
   - [x] Admin CRUD (but without creation) for media ?
-  - [ ] Admin CRUD (but without creation) for dialogs ?
-  - [ ] Admin CRUD (but without creation) for messages ?
   - [x] Vet admins assigning by global admins
   - [x] Vets assigning by vet admins
   - [x] Near vet clinics search
   - [x] Password reset
-  - [ ] Donations (paypal?)
+  - [x] Donations (paypal?)
   - [x] Treatment reports creating
   - [x] Treatment reports viewing
   - [x] Volunteer requests creation
@@ -31,8 +29,5 @@ TODO:
   - [x] Dialogs viewing
   - [x] Messages creation
   - [x] Messages viewing
-  - [ ] Sending messages via websocket ?
   - [x] Sending messages notifications
-  - [ ] Messages editing - ?
-  - [ ] Messages deleting - ?
   - [ ] Caching
