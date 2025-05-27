@@ -8,7 +8,7 @@ from pytz import UTC
 from kkp.config import config
 from kkp.db.point import Point
 from kkp.dependencies import JwtAuthUserDep, JwtSessionDep
-from kkp.models import Media, User, UserProfilePhoto
+from kkp.models import Media, User, UserProfilePhoto, MediaStatus
 from kkp.schemas.users import UserInfo, UserEditRequest, UserMfaEnableRequest, UserMfaDisableRequest, \
     RegisterDeviceRequest, UpdateLocationRequest, PasswordChangeRequest
 from kkp.utils.custom_exception import CustomMessageException
@@ -33,7 +33,8 @@ async def update_user_info(user: JwtAuthUserDep, data: UserEditRequest):
         if data.photo_id == 0:
             await UserProfilePhoto.filter(user=user).delete()
         else:
-            if (media := await Media.get_or_none(id=data.photo_id, uploaded_by=user)) is None:
+            media = await Media.get_or_none(id=data.photo_id, uploaded_by=user, status=MediaStatus.UPLOADED)
+            if media is None:
                 raise CustomMessageException("Media does not exist!")
             await UserProfilePhoto.update_or_create(user=user, defaults={"photo": media})
 
