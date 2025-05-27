@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from pytz import UTC
 
 from kkp.config import config, S3
-from kkp.dependencies import JwtAuthUserDep, JwtMaybeAuthUserDep
+from kkp.dependencies import JwtMaybeAuthUserDep
 from kkp.models import Media, MediaType, MediaStatus
 from kkp.schemas.media import MediaInfo, CreateMediaUploadResponse, CreateMediaUploadRequest
 from kkp.utils.custom_exception import CustomMessageException

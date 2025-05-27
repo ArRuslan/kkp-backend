@@ -5,7 +5,6 @@ from httpx import AsyncClient
 from kkp.config import config
 from kkp.utils.custom_exception import CustomMessageException
 
-
 GOOGLE_TOKEN_URL = "https://accounts.google.com/o/oauth2/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v1/userinfo"
 

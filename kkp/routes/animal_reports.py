@@ -5,7 +5,7 @@ from pytz import UTC
 
 from kkp.config import FCM
 from kkp.db.point import Point, STDistanceSphere
-from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, AnimalReportDep, JwtAuthVetDepN, JwtMaybeAuthUserDep
+from kkp.dependencies import JwtAuthVetDep, AnimalReportDep, JwtAuthVetDepN, JwtMaybeAuthUserDep
 from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, UserRole, Session, MediaStatus, \
     AnimalUpdate, AnimalUpdateType
 from kkp.schemas.animal_reports import CreateAnimalReportsRequest, AnimalReportInfo, RecentReportsQuery, \

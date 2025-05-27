@@ -6,7 +6,6 @@ from kkp.models.volunteer_request import VolAvailability, VolHelp
 from kkp.schemas.media import MediaInfo
 from kkp.schemas.users import UserBaseInfo
 
-
 PhoneNumber.phone_format = "E164"
 
 

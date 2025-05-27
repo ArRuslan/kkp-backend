@@ -4,7 +4,6 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 from kkp.models import UserRole
 from kkp.schemas.media import MediaInfo
 
-
 PhoneNumber.phone_format = "E164"
 
 
