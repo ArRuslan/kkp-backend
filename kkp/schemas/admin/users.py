@@ -12,6 +12,9 @@ class AdminEditUserRequest(BaseModel):
     email: EmailStr | None = None
     photo_id: int | None = None
     disable_mfa: bool | None = None
+    telegram_username: str | None = None
+    viber_phone: PhoneNumber | None = None
+    whatsapp_phone: PhoneNumber | None = None
 
 
 class UsersQuery(PaginationQuery):
