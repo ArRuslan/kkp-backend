@@ -8,6 +8,7 @@ from kkp.models import DonationGoal, Donation, DonationStatus
 from kkp.schemas.common import PaginationResponse
 from kkp.schemas.donations import DonationGoalsQuery, GoalDonationsQuery, DonationGoalInfo, DonationInfo, \
     CreateDonationRequest, DonationCreatedInfo
+from kkp.utils.cache import Cache
 from kkp.utils.custom_exception import CustomMessageException
 from kkp.utils.paypal import PayPal
 
@@ -27,7 +28,7 @@ async def get_goals(query: DonationGoalsQuery = Query()):
     return {
         "count": await goals_query.count(),
         "result": [
-            goal.to_json()
+            await goal.to_json()
             for goal in await goals_query \
                 .limit(query.page_size) \
                 .offset(query.page_size * (query.page - 1))
@@ -37,7 +38,7 @@ async def get_goals(query: DonationGoalsQuery = Query()):
 
 @router.get("/{goal_id}", response_model=DonationGoalInfo)
 async def get_goal(goal: DonationGoalDep):
-    return goal.to_json()
+    return await goal.to_json()
 
 
 @router.get("/{goal_id}/donations", response_model=PaginationResponse[DonationInfo])
@@ -92,6 +93,7 @@ async def process_payment(goal: DonationGoalDep, donation_id: int):
 
     donation.status = DonationStatus.PROCESSED
     await donation.save(update_fields=["status"])
+    await Cache.delete_obj(donation)
 
     update_goal = ["got_amount"]
     goal.got_amount += donation.amount
@@ -100,5 +102,6 @@ async def process_payment(goal: DonationGoalDep, donation_id: int):
         update_goal.append("ended_at")
 
     await goal.save(update_fields=update_goal)
+    await Cache.delete_obj(goal)
 
     return await donation.to_json()

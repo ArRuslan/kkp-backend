@@ -4,6 +4,8 @@ from datetime import datetime
 
 from tortoise import Model, fields
 
+from kkp.utils.cache import Cache
+
 
 class DonationGoal(Model):
     id: int = fields.BigIntField(pk=True)
@@ -14,7 +16,8 @@ class DonationGoal(Model):
     created_at: datetime = fields.DatetimeField(auto_now_add=True)
     ended_at: datetime | None = fields.DatetimeField(null=True, default=None)
 
-    def to_json(self) -> dict:
+    @Cache.decorator()
+    async def to_json(self) -> dict:
         return {
             "id": self.id,
             "name": self.name,
@@ -24,3 +27,8 @@ class DonationGoal(Model):
             "created_at": int(self.created_at.timestamp()),
             "ended_at": int(self.ended_at.timestamp()) if self.ended_at else None,
         }
+
+    def cache_key(self) -> str:
+        return f"donation-goal-{self.id}"
+
+    cache_ns = cache_key
