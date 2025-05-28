@@ -5,6 +5,7 @@ from kkp.models import TreatmentReport
 from kkp.schemas.admin.treatment_reports import ReportsQuery
 from kkp.schemas.common import PaginationResponse
 from kkp.schemas.treatment_reports import TreatmentReportInfo
+from kkp.utils.cache import Cache
 
 router = APIRouter(prefix="/treatment-reports", dependencies=[JwtAuthAdminDepN])
 
@@ -24,6 +25,7 @@ async def get_treatment_reports(query: ReportsQuery = Query()):
 
     reports_query = reports_query.order_by(order)
 
+    Cache.disable()
     return {
         "count": await reports_query.count(),
         "result": [
@@ -37,9 +39,11 @@ async def get_treatment_reports(query: ReportsQuery = Query()):
 
 @router.get("/{treatment_report_id}", response_model=TreatmentReportInfo)
 async def get_treatment_report(report: AdminTreatmentReportDep):
+    Cache.disable()
     return await report.to_json()
 
 
 @router.delete("/{treatment_report_id}", status_code=204)
 async def delete_animal_report(report: AdminTreatmentReportDep):
+    await Cache.delete_obj(report)
     await report.delete()
