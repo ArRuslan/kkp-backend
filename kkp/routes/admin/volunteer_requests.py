@@ -8,6 +8,7 @@ from kkp.models import UserRole, VolRequestStatus, VolunteerRequest
 from kkp.schemas.admin.volunteer_requests import VolReqPaginationQuery, ApproveRejectVolunteerRequest
 from kkp.schemas.common import PaginationResponse
 from kkp.schemas.volunteer_requests import VolunteerRequestInfo
+from kkp.utils.cache import Cache
 from kkp.utils.notification_util import send_notification
 
 router = APIRouter(prefix="/volunteer-requests", dependencies=[JwtAuthAdminDepN])
@@ -30,6 +31,7 @@ async def get_volunteer_requests(query: VolReqPaginationQuery = Query()):
 
     req_query = req_query.order_by(order)
 
+    Cache.disable()
     return {
         "count": await req_query.count(),
         "result": [
@@ -43,6 +45,7 @@ async def get_volunteer_requests(query: VolReqPaginationQuery = Query()):
 
 @router.get("/{volunteer_request_id}", response_model=VolunteerRequestInfo)
 async def get_volunteer_request(vol_request: AdminVolunteerRequestDep):
+    Cache.disable()
     return await vol_request.to_json()
 
 
@@ -56,6 +59,7 @@ async def approve_volunteer_request(vol_request: AdminVolunteerRequestDep, data:
     vol_request.review_text = data.text
     vol_request.reviewed_at = datetime.now(UTC)
     await vol_request.save(update_fields=["status", "review_text", "reviewed_at"])
+    await Cache.delete_obj(vol_request)
 
     update_user = []
     if vol_request.user.telegram_username is None and vol_request.telegram_username is not None:
@@ -70,6 +74,7 @@ async def approve_volunteer_request(vol_request: AdminVolunteerRequestDep, data:
 
     if update_user:
         await vol_request.user.save(update_fields=update_user)
+        await Cache.delete_obj(vol_request.user)
 
     await send_notification(
         vol_request.user,
@@ -89,6 +94,7 @@ async def reject_volunteer_request(vol_request: AdminVolunteerRequestDep, data: 
     vol_request.review_text = data.text
     vol_request.reviewed_at = datetime.now(UTC)
     await vol_request.save(update_fields=["status", "review_text", "reviewed_at"])
+    await Cache.delete_obj(vol_request)
 
     await send_notification(
         vol_request.user,

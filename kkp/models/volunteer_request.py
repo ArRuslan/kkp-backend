@@ -7,6 +7,7 @@ from tortoise import fields, Model
 
 from kkp import models
 from kkp.db.int_flag import IntFlagField
+from kkp.utils.cache import Cache
 
 
 class VolRequestStatus(IntEnum):
@@ -47,6 +48,7 @@ class VolunteerRequest(Model):
     viber_phone: str | None = fields.CharField(max_length=64, null=True, default=None)
     whatsapp_phone: str | None = fields.CharField(max_length=64, null=True, default=None)
 
+    @Cache.decorator()
     async def to_json(self) -> dict:
         self.user = await self.user
 
@@ -72,3 +74,8 @@ class VolunteerRequest(Model):
             "viber_phone": self.viber_phone,
             "whatsapp_phone": self.whatsapp_phone,
         }
+
+    def cache_key(self) -> str:
+        return f"vol-request-{self.id}"
+
+    cache_ns = cache_key

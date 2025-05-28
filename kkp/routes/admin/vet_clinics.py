@@ -7,6 +7,7 @@ from kkp.schemas.admin.vet_clinics import CreateVetClinicRequest, EditVetClinicR
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 from kkp.schemas.users import UserInfo
 from kkp.schemas.vet_clinics import VetClinicInfo
+from kkp.utils.cache import Cache
 from kkp.utils.custom_exception import CustomMessageException
 
 router = APIRouter(prefix="/vet-clinic")
@@ -27,6 +28,7 @@ async def get_clinics(user: JwtAuthVetAdminDep, query: VetClinicsQuery = Query()
 
     db_query = db_query.order_by(order)
 
+    Cache.disable()
     return {
         "count": await db_query.count(),
         "result": [
@@ -43,6 +45,7 @@ async def get_vet_clinic(user: JwtAuthVetAdminDep, clinic: AdminVetClinicDep):
     if user.role < UserRole.GLOBAL_ADMIN and clinic.admin != user:
         raise CustomMessageException("Unknown vet clinic.", 404)
 
+    Cache.disable()
     return await clinic.to_json()
 
 
@@ -91,7 +94,9 @@ async def edit_vet_clinic(user: JwtAuthVetAdminDep, clinic: AdminVetClinicDep, d
 
     if to_update:
         await clinic.save(update_fields=to_update)
+        await Cache.delete_obj(clinic)
 
+    Cache.disable()
     return await clinic.to_json()
 
 
@@ -99,6 +104,7 @@ async def edit_vet_clinic(user: JwtAuthVetAdminDep, clinic: AdminVetClinicDep, d
 async def delete_vet_clinic(clinic: AdminVetClinicDep):
     clinic.location.name = None
     await clinic.location.save(update_fields=["name"])
+    await Cache.delete_obj(clinic)
     await clinic.delete()
 
 
@@ -127,6 +133,7 @@ async def add_clinic_employee(user: JwtAuthVetAdminDep, clinic: AdminVetClinicDe
         raise CustomMessageException("Unknown user.", 404)
 
     await clinic.employees.add(emp_user)
+    await Cache.delete_obj(clinic)
 
 
 @router.delete("/{vet_clinic_id}/employees/{employee_id}", status_code=204)
@@ -138,3 +145,4 @@ async def remove_clinic_employee(user: JwtAuthVetAdminDep, clinic: AdminVetClini
         raise CustomMessageException("Unknown user.", 404)
 
     await clinic.employees.remove(emp_user)
+    await Cache.delete_obj(clinic)
