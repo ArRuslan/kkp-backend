@@ -62,10 +62,12 @@ async def edit_animal_report(report: AnimalReportDep, data: EditAnimalReportRequ
 
     if update_fields:
         await report.save(update_fields=update_fields)
+        await Cache.delete_obj(report)
 
     return await report.to_json()
 
 
 @router.delete("/{report_id}", status_code=204)
 async def delete_animal_report(report: AnimalReportDep):
+    await Cache.delete_obj(report)
     await report.delete()

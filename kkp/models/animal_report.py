@@ -5,6 +5,7 @@ from datetime import datetime
 from tortoise import Model, fields
 
 from kkp import models
+from kkp.utils.cache import Cache
 
 
 class AnimalReport(Model):
@@ -21,6 +22,7 @@ class AnimalReport(Model):
     assigned_to: int | None
     location: int
 
+    @Cache.decorator()
     async def to_json(self) -> dict:
         to_fetch = []
         if self.reported_by is not None:
@@ -48,3 +50,6 @@ class AnimalReport(Model):
             ],
             "location": self.location.to_json(),
         }
+
+    def cache_key(self) -> str:
+        return f"animal-report-{self.id}"

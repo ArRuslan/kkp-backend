@@ -120,5 +120,6 @@ async def assign_animal_report_to_user(user: JwtAuthVetDep, report: AnimalReport
 
     report.assigned_to = user
     await report.save(update_fields=["assigned_to_id"])
+    await Cache.delete_obj(report)
 
     return await report.to_json()
