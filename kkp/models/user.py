@@ -6,6 +6,7 @@ import bcrypt
 from tortoise import Model, fields
 
 from kkp import models
+from kkp.utils.cache import Cache
 
 
 class UserRole(IntEnum):
@@ -34,6 +35,7 @@ class User(Model):
             return False
         return bcrypt.checkpw(password.encode("utf8"), self.password.encode("utf8"))
 
+    @Cache.decorator(key_suffix="basic")
     async def to_json_base(self) -> dict:
         photo = await models.UserProfilePhoto.get_or_none(user=self).select_related("photo")
 
@@ -47,6 +49,7 @@ class User(Model):
             "whatsapp_phone": self.whatsapp_phone,
         }
 
+    @Cache.decorator(key_suffix="full")
     async def to_json(self) -> dict:
         photo = await models.UserProfilePhoto.get_or_none(user=self).select_related("photo")
 
@@ -62,3 +65,6 @@ class User(Model):
             "viber_phone": self.viber_phone,
             "whatsapp_phone": self.whatsapp_phone,
         }
+
+    def cache_key(self) -> str:
+        return f"user-{self.id}"

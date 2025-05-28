@@ -21,12 +21,14 @@ MARIADB_DB = "kkp"
 
 SMTP_PORT = 55003
 MAILCATCHER_PORT = 55004
+REDIS_PORT = 55005
 
 environ["s3_endpoint"] = MINIO_ENDPOINT
 environ["s3_access_key_id"] = MINIO_CRED
 environ["s3_access_secret_key"] = MINIO_CRED
 environ["db_connection_string"] = f"mysql://root:{MARIADB_PASS}@127.0.0.1:{MARIADB_PORT}/{MARIADB_DB}_{{}}"
 environ["smtp_port"] = str(SMTP_PORT)
+environ["redis_port"] = str(REDIS_PORT)
 environ["TORTOISE_TESTING"] = "1"
 
 from kkp.main import app
@@ -44,8 +46,19 @@ httpx_mock_decorator = pytest.mark.httpx_mock(
 
 @pytest_asyncio.fixture
 async def app_with_lifespan() -> AsyncGenerator[FastAPI, None]:
+    docker = Docker()
+    redis_container = await docker.containers.get("kkp-test-redis")
+    ready_exec = await redis_container.exec(["redis-cli", "flushall"])
+    ready_stream = ready_exec.start()
+    while (out_message := await ready_stream.read_out()) is not None:
+        if out_message.stream == 1 and b"OK\n" in out_message.data:
+            break
+
     async with LifespanManager(app) as manager:
         yield manager.app
+
+    from kkp.utils.cache import Cache
+    await Cache._cache.close()
 
 
 @pytest_asyncio.fixture
@@ -229,6 +242,48 @@ async def run_mailcatcher_in_docker():
                 break
 
     print(f"Mailcatcher container is ready in {time() - start_time:.2f} seconds")
+
+    yield
+
+    await container.delete(force=True)
+    await docker.close()
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def run_redis_in_docker():
+    print("Starting redis container...")
+    start_time = time()
+
+    docker = Docker()
+    try:
+        existing_container = await docker.containers.get("kkp-test-redis")
+    except DockerError as e:
+        if e.status != 404:
+            raise
+    else:
+        await existing_container.delete(force=True)
+
+    container = await docker.containers.run(name="kkp-test-redis", config={
+        "Image": "redis:latest",
+        "HostConfig": {
+            "AutoRemove": True,
+            "Memory": 64 * 1024 * 1024,
+            "PortBindings": {
+                "6379/tcp": [{"HostPort": f"{REDIS_PORT}"}],
+            }
+        },
+    })
+
+    ready = False
+    while not ready:
+        ready_exec = await container.exec(["redis-cli", "ping"])
+        ready_stream = ready_exec.start()
+        while (out_message := await ready_stream.read_out()) is not None:
+            if out_message.stream == 1 and b"PONG\n" in out_message.data:
+                ready = True
+                break
+
+    print(f"Redis container is ready in {time() - start_time:.2f} seconds")
 
     yield
 

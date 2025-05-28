@@ -5,6 +5,7 @@ from kkp.models import Media, User, UserProfilePhoto, MediaStatus
 from kkp.schemas.admin.users import AdminEditUserRequest, UsersQuery
 from kkp.schemas.common import PaginationResponse
 from kkp.schemas.users import UserInfo
+from kkp.utils.cache import Cache
 from kkp.utils.custom_exception import CustomMessageException
 
 router = APIRouter(prefix="/users", dependencies=[JwtAuthAdminDepN])
@@ -27,6 +28,7 @@ async def get_users(query: UsersQuery = Query()):
 
     users_query = users_query.order_by(order)
 
+    Cache.disable()
     return {
         "count": await users_query.count(),
         "result": [
@@ -40,6 +42,7 @@ async def get_users(query: UsersQuery = Query()):
 
 @router.get("/{user_id}", response_model=UserInfo)
 async def get_user(user: AdminUserDep):
+    Cache.disable()
     return await user.to_json()
 
 
@@ -53,18 +56,23 @@ async def edit_user(user: AdminUserDep, data: AdminEditUserRequest):
     if data.photo_id is not None:
         if data.photo_id == 0:
             await UserProfilePhoto.filter(user=user).delete()
+            await Cache.delete_obj(user, "basic", "full")
         else:
             if (media := await Media.get_or_none(id=data.photo_id, status=MediaStatus.UPLOADED)) is None:
                 raise CustomMessageException("Media does not exist!")
             await UserProfilePhoto.update_or_create(user=user, defaults={"media": media})
+            await Cache.delete_obj(user, "basic", "full")
     if data.disable_mfa:
         update_data["mfa_key"] = None
+
     if update_data:
         await user.update_from_dict(update_data).save(update_fields=list(update_data.keys()))
+        await Cache.delete_obj(user, "basic", "full")
 
     return await user.to_json()
 
 
 @router.delete("/{user_id}", status_code=204)
 async def delete_user(user: AdminUserDep):
+    await Cache.delete_obj(user, "basic", "full")
     await user.delete()

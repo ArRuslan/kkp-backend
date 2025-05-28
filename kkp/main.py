@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from os import environ
 
+import aiocache
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from httpx import RemoteProtocolError
@@ -36,6 +37,16 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
 
             from asyncio import sleep
             await sleep(1)
+
+    aiocache.caches.set_config({
+        "default": {
+            "cache": "aiocache.RedisCache",
+            "endpoint": config.redis_host,
+            "port": config.redis_port,
+            "serializer": {"class": "aiocache.serializers.JsonSerializer"},
+            "plugins": [],
+        },
+    })
 
     is_testing = environ.get("TORTOISE_TESTING") == "1"
     orm_config = generate_config(

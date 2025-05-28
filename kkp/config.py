@@ -45,6 +45,9 @@ class _Config(BaseSettings):
     paypal_id: str = ""
     paypal_secret: str = ""
 
+    redis_host: str = "127.0.0.1"
+    redis_port: int = 6379
+
     @field_validator("jwt_key", mode="before")
     def decode_jwt_key(cls, value: str | bytes) -> bytes:
         if not isinstance(value, bytes) or len(value) != 16:

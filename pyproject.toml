@@ -17,7 +17,7 @@ aerich = "^0.8.2"
 bcrypt = "^4.3.0"
 aiosmtplib = "^4.0.1"
 aiofcm = {git = "https://github.com/RuslanUC/aiofcm"}
-aiocache = "^0.12.3"
+aiocache = {extras = ["redis"], version = "^0.12.3"}
 pydantic-extra-types = {extras = ["phonenumbers"], version = "^2.10.4"}
 
 

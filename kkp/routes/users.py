@@ -11,6 +11,7 @@ from kkp.dependencies import JwtAuthUserDep, JwtSessionDep
 from kkp.models import Media, User, UserProfilePhoto, MediaStatus
 from kkp.schemas.users import UserInfo, UserEditRequest, UserMfaEnableRequest, UserMfaDisableRequest, \
     RegisterDeviceRequest, UpdateLocationRequest, PasswordChangeRequest
+from kkp.utils.cache import Cache
 from kkp.utils.custom_exception import CustomMessageException
 from kkp.utils.mfa import Mfa
 
@@ -32,14 +33,17 @@ async def update_user_info(user: JwtAuthUserDep, data: UserEditRequest):
     if data.photo_id is not None:
         if data.photo_id == 0:
             await UserProfilePhoto.filter(user=user).delete()
+            await Cache.delete_obj(user, "basic", "full")
         else:
             media = await Media.get_or_none(id=data.photo_id, uploaded_by=user, status=MediaStatus.UPLOADED)
             if media is None:
                 raise CustomMessageException("Media does not exist!")
             await UserProfilePhoto.update_or_create(user=user, defaults={"photo": media})
+            await Cache.delete_obj(user, "basic", "full")
 
     if update_data:
         await user.update_from_dict(update_data).save(update_fields=list(update_data.keys()))
+        await Cache.delete_obj(user, "basic", "full")
 
     return await user.to_json()
 
@@ -55,6 +59,7 @@ async def enable_mfa(user: JwtAuthUserDep, data: UserMfaEnableRequest):
 
     user.mfa_key = data.key
     await user.save(update_fields=["mfa_key"])
+    await Cache.delete_obj(user, "basic", "full")
 
     return await user.to_json()
 
@@ -70,6 +75,7 @@ async def disable_mfa(user: JwtAuthUserDep, data: UserMfaDisableRequest):
 
     user.mfa_key = None
     await user.save(update_fields=["mfa_key"])
+    await Cache.delete_obj(user, "basic", "full")
 
     return await user.to_json()
 

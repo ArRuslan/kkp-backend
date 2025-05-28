@@ -58,6 +58,8 @@ services:
       - OAUTH_GOOGLE_REDIRECT=${OAUTH_GOOGLE_REDIRECT}
       - PAYPAL_ID=${PAYPAL_ID}
       - PAYPAL_SECRET=${PAYPAL_SECRET}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       - minio
       - mariadb
