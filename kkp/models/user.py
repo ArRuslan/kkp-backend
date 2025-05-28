@@ -68,3 +68,5 @@ class User(Model):
 
     def cache_key(self) -> str:
         return f"user-{self.id}"
+
+    cache_ns = cache_key

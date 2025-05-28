@@ -68,3 +68,5 @@ class Animal(Model):
 
     def cache_key(self) -> str:
         return f"animal-{self.id}"
+
+    cache_ns = cache_key

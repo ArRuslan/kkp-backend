@@ -53,3 +53,5 @@ class AnimalReport(Model):
 
     def cache_key(self) -> str:
         return f"animal-report-{self.id}"
+
+    cache_ns = cache_key

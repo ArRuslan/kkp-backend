@@ -56,23 +56,23 @@ async def edit_user(user: AdminUserDep, data: AdminEditUserRequest):
     if data.photo_id is not None:
         if data.photo_id == 0:
             await UserProfilePhoto.filter(user=user).delete()
-            await Cache.delete_obj(user, "basic", "full")
+            await Cache.delete_obj(user)
         else:
             if (media := await Media.get_or_none(id=data.photo_id, status=MediaStatus.UPLOADED)) is None:
                 raise CustomMessageException("Media does not exist!")
             await UserProfilePhoto.update_or_create(user=user, defaults={"media": media})
-            await Cache.delete_obj(user, "basic", "full")
+            await Cache.delete_obj(user)
     if data.disable_mfa:
         update_data["mfa_key"] = None
 
     if update_data:
         await user.update_from_dict(update_data).save(update_fields=list(update_data.keys()))
-        await Cache.delete_obj(user, "basic", "full")
+        await Cache.delete_obj(user)
 
     return await user.to_json()
 
 
 @router.delete("/{user_id}", status_code=204)
 async def delete_user(user: AdminUserDep):
-    await Cache.delete_obj(user, "basic", "full")
+    await Cache.delete_obj(user)
     await user.delete()

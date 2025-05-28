@@ -31,6 +31,9 @@ async def get_animals(user: JwtMaybeAuthUserDep, query: AnimalQuery = Query()):
 
     animals_query = animals_query.order_by(order)
 
+    if user is not None:
+        Cache.suffix(f"u{user.id}")
+
     return {
         "count": await animals_query.count(),
         "result": [
@@ -44,6 +47,8 @@ async def get_animals(user: JwtMaybeAuthUserDep, query: AnimalQuery = Query()):
 
 @router.get("/{animal_id}", response_model=AnimalInfo)
 async def get_animal(animal: AnimalDep, user: JwtMaybeAuthUserDep):
+    if user is not None:
+        Cache.suffix(f"u{user.id}")
     return await animal.to_json(user)
 
 
