@@ -3,6 +3,7 @@ from functools import wraps
 from typing import ParamSpec, TypeVar, Callable, Protocol
 
 import aiocache
+from loguru import logger
 
 P = ParamSpec("P")
 Tdict = TypeVar("Tdict", bound=dict)
@@ -75,11 +76,23 @@ class Cache:
                 if cls._suffix.get():
                     cache_key += f"-{cls._suffix.get()}"
 
+                obj_repr = f"{self.__class__.__name__}[{self.pk}]"
+                logger.debug(f"Cache key for {obj_repr} is {cache_key} (cache_ns={cache_ns!r}, cache_key={self.cache_key()!r}, key_suffix={key_suffix!r}, cls._suffix={cls._suffix.get()})")
+
                 if not cls._disabled.get() and (cached := await cls.get(cache_ns, cache_key)) is not None:
+                    logger.debug(f"Object {obj_repr} was cached: {cached}")
                     return cached
 
+                logger.debug(f"Object {obj_repr} was not cached, disabled={cls._disabled.get()!r}")
+
                 result = await func(self, *args, **kwargs)
+                logger.debug(f"Object {obj_repr} is {result}")
                 await cls.set(cache_ns, cache_key, result, ttl)
+
+                if (c := await cls.get(cache_ns, cache_key)) != result:
+                    logger.error(f"Object {obj_repr} cache/actual value mismatch !!!")
+                    logger.error(f"Object {obj_repr} cached: {c}")
+                    logger.error(f"Object {obj_repr} actual: {result}")
 
                 return result
 

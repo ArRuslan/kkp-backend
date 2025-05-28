@@ -60,6 +60,7 @@ services:
       - PAYPAL_SECRET=${PAYPAL_SECRET}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - LOGURU_LEVEL=DEBUG
     depends_on:
       - minio
       - mariadb
