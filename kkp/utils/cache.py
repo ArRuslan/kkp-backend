@@ -53,15 +53,19 @@ class Cache:
 
     @classmethod
     async def delete_obj(cls, obj: Cacheable) -> None:
+        logger.debug(f"Deleting everything in namespace {obj.cache_ns()} of object {obj.__class__.__name__}[{obj.pk}]")
+
         cls._init_maybe()
         await cls._cache.clear(namespace=obj.cache_ns())
 
     @classmethod
     def disable(cls) -> None:
+        logger.debug(f"Cache disabled")
         cls._disabled.set(True)
 
     @classmethod
     def suffix(cls, suffix: str) -> None:
+        logger.debug(f"Cache suffix set to {suffix!r}")
         cls._suffix.set(suffix)
 
     @classmethod
