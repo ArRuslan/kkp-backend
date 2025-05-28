@@ -30,4 +30,4 @@ TODO:
   - [x] Messages creation
   - [x] Messages viewing
   - [x] Sending messages notifications
-  - [ ] Caching
+  - [x] Caching

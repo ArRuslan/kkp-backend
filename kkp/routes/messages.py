@@ -22,7 +22,7 @@ router = APIRouter(prefix="/messages")
 async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
     dialogs_q = Dialog.filter(Q(to_user=user) | Q(from_user=user))
 
-    Cache.suffix(f"u{user.id}")
+    Cache.suffix(f"u{user.id}-withlast")
     return {
         "count": await dialogs_q.count(),
         "result": [
@@ -114,6 +114,7 @@ async def send_message(user_id: int, user: JwtAuthUserDep, data: CreateMessageRe
             raise CustomMessageException("Media does not exist!")
 
     message = await Message.create(dialog=dialog, author=user, text=data.text, media=media)
+    await Cache.delete_obj(dialog)
 
     await send_notification(
         other_user,
