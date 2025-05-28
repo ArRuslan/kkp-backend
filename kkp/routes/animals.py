@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Query
+from loguru import logger
 from pytz import UTC
 
 from kkp.dependencies import AnimalDep, JwtAuthUserDepN, JwtAuthVetDepN, JwtMaybeAuthUserDep
@@ -59,8 +60,13 @@ async def edit_animal(animal: AnimalDep, data: EditAnimalRequest):
         if medias:
             await animal.medias.remove(*medias)
             await Cache.delete_obj(animal)
+    logger.info(f"/animals/{animal.id}: {data.add_media_ids=}")
     if data.add_media_ids is not None:
         medias = await Media.filter(id__in=data.add_media_ids, status=MediaStatus.UPLOADED)
+        logger.info(f"/animals/{animal.id}: {medias=}")
+        if len(medias) != len(data.add_media_ids):
+            not_only_uploaded = await Media.filter(id__in=data.add_media_ids)
+            logger.info(f"/animals/{animal.id}: {not_only_uploaded=}")
         if medias:
             await animal.medias.add(*medias)
             await Cache.delete_obj(animal)
