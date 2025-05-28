@@ -5,6 +5,7 @@ from kkp.models import AnimalReport, User
 from kkp.schemas.admin.animal_reports import EditAnimalReportRequest, AnimalReportsQuery
 from kkp.schemas.animal_reports import AnimalReportInfo
 from kkp.schemas.common import PaginationResponse
+from kkp.utils.cache import Cache
 from kkp.utils.custom_exception import CustomMessageException
 
 router = APIRouter(prefix="/animal-reports", dependencies=[JwtAuthAdminDepN])
@@ -29,6 +30,7 @@ async def get_animal_reports(query: AnimalReportsQuery = Query()):
 
     reports_query = reports_query.order_by(order)
 
+    Cache.disable()
     return {
         "count": await reports_query.count(),
         "result": [
@@ -42,6 +44,7 @@ async def get_animal_reports(query: AnimalReportsQuery = Query()):
 
 @router.get("/{report_id}", response_model=AnimalReportInfo)
 async def get_animal_report(report: AnimalReportDep):
+    Cache.disable()
     return await report.to_json()
 
 

@@ -11,6 +11,7 @@ from kkp.models import Animal, Media, AnimalStatus, GeoPoint, AnimalReport, User
 from kkp.schemas.animal_reports import CreateAnimalReportsRequest, AnimalReportInfo, RecentReportsQuery, \
     MyAnimalReportsQuery
 from kkp.schemas.common import PaginationResponse
+from kkp.utils.cache import Cache
 from kkp.utils.custom_exception import CustomMessageException
 
 router = APIRouter(prefix="/animal-reports")
@@ -36,6 +37,7 @@ async def create_animal_report(user: JwtMaybeAuthUserDep, data: CreateAnimalRepo
     media = await Media.filter(id__in=data.media_ids, uploaded_by=user, status=MediaStatus.UPLOADED)
     await report.media.add(*media)
     await animal.medias.add(*media)
+    await Cache.delete_obj(animal)
 
     await AnimalUpdate.create(animal=animal, type=AnimalUpdateType.REPORT, animal_report=report)
 

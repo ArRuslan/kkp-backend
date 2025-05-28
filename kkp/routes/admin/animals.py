@@ -8,6 +8,7 @@ from kkp.models import Media, Animal, MediaStatus, GeoPoint
 from kkp.schemas.admin.animals import AnimalQuery
 from kkp.schemas.animals import AnimalInfo, EditAnimalRequest
 from kkp.schemas.common import PaginationResponse
+from kkp.utils.cache import Cache
 
 router = APIRouter(prefix="/animals", dependencies=[JwtAuthAdminDepN])
 
@@ -27,6 +28,7 @@ async def get_animals(query: AnimalQuery = Query()):
 
     animals_query = animals_query.order_by(order)
 
+    Cache.disable()
     return {
         "count": await animals_query.count(),
         "result": [
@@ -40,6 +42,7 @@ async def get_animals(query: AnimalQuery = Query()):
 
 @router.get("/{animal_id}", response_model=AnimalInfo)
 async def get_animal(animal: AdminAnimalDep):
+    Cache.disable()
     return await animal.to_json()
 
 
@@ -49,10 +52,12 @@ async def edit_animal(animal: AdminAnimalDep, data: EditAnimalRequest):
         medias = await Media.filter(id__in=data.remove_media_ids, status=MediaStatus.UPLOADED)
         if medias:
             await animal.medias.remove(*medias)
+            await Cache.delete_obj(animal)
     if data.add_media_ids is not None:
         medias = await Media.filter(id__in=data.add_media_ids, status=MediaStatus.UPLOADED)
         if medias:
             await animal.medias.add(*medias)
+            await Cache.delete_obj(animal)
 
     update_data = data.model_dump(exclude_defaults=True, exclude={
         "add_media_ids", "remove_media_ids", "current_latitude", "current_longitude",
@@ -72,10 +77,12 @@ async def edit_animal(animal: AdminAnimalDep, data: EditAnimalRequest):
     update_data["updated_at"] = datetime.now(UTC)
     animal.update_from_dict(update_data)
     await animal.save(update_fields=update_fields)
+    await Cache.delete_obj(animal)
 
     return await animal.to_json()
 
 
 @router.delete("/{animal_id}", status_code=204)
 async def delete_animal(animal: AdminAnimalDep):
+    await Cache.delete_obj(animal)
     await animal.delete()

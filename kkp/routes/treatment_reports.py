@@ -6,6 +6,7 @@ from pytz import UTC
 from kkp.dependencies import JwtAuthUserDep, JwtAuthVetDep, TreatmentReportDep
 from kkp.models import AnimalReport, UserRole, TreatmentReport, VetClinic, AnimalUpdate, AnimalUpdateType
 from kkp.schemas.treatment_reports import TreatmentReportInfo, CreateTreatmentReportRequest
+from kkp.utils.cache import Cache
 from kkp.utils.custom_exception import CustomMessageException
 
 router = APIRouter(prefix="/treatment-reports")
@@ -26,6 +27,7 @@ async def create_treatment_report(user: JwtAuthVetDep, data: CreateTreatmentRepo
     )
     report.animal.updated_at = datetime.now(UTC)
     await report.animal.save(update_fields=["updated_at"])
+    await Cache.delete_obj(report.animal)
 
     await AnimalUpdate.create(animal=report.animal, type=AnimalUpdateType.TREATMENT, treatment_report=treatment_report)
 

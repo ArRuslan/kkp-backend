@@ -6,6 +6,7 @@ from enum import IntEnum
 from tortoise import Model, fields
 
 from kkp import models
+from kkp.utils.cache import Cache
 
 
 class AnimalStatus(IntEnum):
@@ -34,6 +35,7 @@ class Animal(Model):
     updated_at: datetime = fields.DatetimeField(auto_now_add=True)
     gender: AnimalGender = fields.IntEnumField(AnimalGender, default=AnimalGender.UNKNOWN)
 
+    @Cache.decorator()
     async def to_json(self, current_user: models.User | None = None) -> dict:
         total_media_count = await self.medias.all().count()
         medias = await self.medias.all().order_by("-id").limit(5)
@@ -63,3 +65,6 @@ class Animal(Model):
             "updated_at": int(self.updated_at.timestamp()),
             "subscribed": subscribed,
         }
+
+    def cache_key(self) -> str:
+        return f"animal-{self.id}"

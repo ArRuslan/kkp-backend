@@ -11,6 +11,7 @@ from kkp.schemas.animal_reports import AnimalReportInfo
 from kkp.schemas.animals import AnimalInfo, EditAnimalRequest
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 from kkp.schemas.treatment_reports import TreatmentReportInfo
+from kkp.utils.cache import Cache
 
 router = APIRouter(prefix="/animals")
 
@@ -52,10 +53,12 @@ async def edit_animal(animal: AnimalDep, data: EditAnimalRequest):
         medias = await Media.filter(id__in=data.remove_media_ids, status=MediaStatus.UPLOADED)
         if medias:
             await animal.medias.remove(*medias)
+            await Cache.delete_obj(animal)
     if data.add_media_ids is not None:
         medias = await Media.filter(id__in=data.add_media_ids, status=MediaStatus.UPLOADED)
         if medias:
             await animal.medias.add(*medias)
+            await Cache.delete_obj(animal)
 
     update_data = data.model_dump(exclude_defaults=True, exclude={
         "add_media_ids", "remove_media_ids", "current_latitude", "current_longitude",
@@ -75,6 +78,7 @@ async def edit_animal(animal: AnimalDep, data: EditAnimalRequest):
     update_data["updated_at"] = datetime.now(UTC)
     animal.update_from_dict(update_data)
     await animal.save(update_fields=update_fields)
+    await Cache.delete_obj(animal)
 
     await AnimalUpdate.create(animal=animal, type=AnimalUpdateType.ANIMAL)
 
