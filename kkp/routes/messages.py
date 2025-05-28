@@ -9,6 +9,7 @@ from kkp.models import Dialog, Message, User, Media
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 from kkp.schemas.messages import DialogInfo, CreateMessageRequest, MessageInfo, MessagePaginationQuery, \
     GetLastMessagesRequest
+from kkp.utils.cache import Cache
 from kkp.utils.custom_exception import CustomMessageException
 from kkp.utils.notification_util import send_notification
 
@@ -21,10 +22,11 @@ router = APIRouter(prefix="/messages")
 async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
     dialogs_q = Dialog.filter(Q(to_user=user) | Q(from_user=user))
 
+    Cache.suffix(f"u{user.id}")
     return {
         "count": await dialogs_q.count(),
         "result": [
-            await dialog.to_json(user)
+            await dialog.to_json(user, with_last_message=True)
             for dialog in await dialogs_q.all().select_related("from_user", "to_user") \
                 .limit(query.page_size) \
                 .offset(query.page_size * (query.page - 1))
@@ -42,6 +44,8 @@ async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
 async def get_last_messages(user: JwtAuthUserDep, data: GetLastMessagesRequest):
     dialog_q = Q(dialog__to_user=user) | Q(dialog__from_user=user)
 
+    Cache.suffix(f"u{user.id}")
+
     messages = await Message.filter(id__in=Subquery(
         Message
         .filter(dialog_q & Q(dialog__id__in=data.dialog_ids))
@@ -54,19 +58,6 @@ async def get_last_messages(user: JwtAuthUserDep, data: GetLastMessagesRequest):
         message.dialog.id: await message.to_json(user)
         for message in messages
     }
-
-
-"""
-@router.get("/new-messages", response_model=NewMessagesResponse)
-async def get_new_message(user: JwtAuthUserDep, query: GetNewMessagesQuery = Query()):
-    dialog_q = Q(dialog__to_user=user) | Q(dialog__from_user=user)
-    last_message_id = query.new_id
-    if last_message_id == 0:
-        last_message_id = await Message.filter(dialog_q).order_by("-id").values_list("id", flat=True).first()
-    last_message_id = last_message_id or 0
-
-    db_query = Message.filter(dialog_q & Q(id__gt=query.last_known_id, id__lte=last_message_id))
-"""
 
 
 def make_dialog_q(this_user_id: int, other_user_id: int, prefix: str = "") -> Q:
@@ -96,6 +87,8 @@ async def get_messages(user_id: int, user: JwtAuthUserDep, query: MessagePaginat
 
     limit = min(max(query.limit, 1), 100)
     related = ("dialog__from_user", "dialog__to_user", "author", "media")
+
+    Cache.suffix(f"u{user.id}")
 
     return {
         "count": await Message.filter(dialog_q).count(),
@@ -131,4 +124,5 @@ async def send_message(user_id: int, user: JwtAuthUserDep, data: CreateMessageRe
         ),
     )
 
+    Cache.suffix(f"u{user.id}")
     return await message.to_json(user)

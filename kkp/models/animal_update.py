@@ -6,6 +6,7 @@ from enum import IntEnum
 from tortoise import fields, Model
 
 from kkp import models
+from kkp.utils.cache import Cache
 
 
 class AnimalUpdateType(IntEnum):
@@ -22,6 +23,7 @@ class AnimalUpdate(Model):
     animal_report: models.AnimalReport | None = fields.ForeignKeyField("models.AnimalReport", null=True, default=None)
     treatment_report: models.TreatmentReport | None = fields.ForeignKeyField("models.TreatmentReport", null=True, default=None)
 
+    @Cache.decorator()
     async def to_json(self) -> dict:
         self.animal = await self.animal
 
@@ -38,3 +40,8 @@ class AnimalUpdate(Model):
             "animal_report": await self.animal_report.to_json() if self.type is AnimalUpdateType.REPORT and self.animal_report is not None else None,
             "treatment_report": await self.treatment_report.to_json() if self.type is AnimalUpdateType.TREATMENT and self.treatment_report is not None else None,
         }
+
+    def cache_key(self) -> str:
+        return f"animal-update-{self.id}"
+
+    cache_ns = cache_key

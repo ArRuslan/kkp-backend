@@ -4,9 +4,17 @@ from kkp.schemas.media import MediaInfo
 from kkp.schemas.users import UserBaseInfo
 
 
+class MinMessageInfo(BaseModel):
+    id: int
+    text: str
+    has_media: bool
+    date: int
+
+
 class DialogInfo(BaseModel):
     id: int
     user: UserBaseInfo
+    last_message: MinMessageInfo | None
 
 
 class CreateMessageRequest(BaseModel):

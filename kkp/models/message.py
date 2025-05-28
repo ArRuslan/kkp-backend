@@ -5,6 +5,7 @@ from datetime import datetime
 from tortoise import Model, fields
 
 from kkp import models
+from kkp.utils.cache import Cache
 
 
 class Message(Model):
@@ -16,6 +17,9 @@ class Message(Model):
     date: datetime = fields.DatetimeField(auto_now_add=True)
     # TODO: replies?
 
+    media_id: int | None
+
+    @Cache.decorator()
     async def to_json(self, current_user: models.User) -> dict:
         if self.dialog is not None:
             self.dialog = await self.dialog
@@ -32,3 +36,8 @@ class Message(Model):
             "media": self.media.to_json() if self.media is not None else None,
             "date": int(self.date.timestamp()),
         }
+
+    def cache_key(self) -> str:
+        return f"message-{self.id}"
+
+    cache_ns = cache_key
