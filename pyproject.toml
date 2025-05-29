@@ -20,6 +20,7 @@ aiofcm = {git = "https://github.com/RuslanUC/aiofcm"}
 aiocache = {extras = ["redis"], version = "^0.12.3"}
 pydantic-extra-types = {extras = ["phonenumbers"], version = "^2.10.4"}
 loguru = "^0.7.3"
+gunicorn = "^23.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -29,6 +30,7 @@ pytest-asyncio = "^0.26.0"
 asgi-lifespan = "^2.1.0"
 pytest-httpx = "^0.35.0"
 aiodocker = "^0.24.0"
+locust = "^2.37.6"
 
 [build-system]
 requires = ["poetry-core"]
