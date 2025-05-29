@@ -132,6 +132,12 @@ async def test_assign_report(client: AsyncClient):
     reports = PaginationAnimalReportResponse(**response.json())
     assert reports.count == 0
 
+    response = await client.get(f"/animal-reports/my", headers={"authorization": vet_token})
+    assert response.status_code == 200, response.json()
+    reports = PaginationAnimalReportResponse(**response.json())
+    assert reports.count == 1
+    assert reports.result[0] == report2
+
 
 @pytest.mark.asyncio
 async def test_create_report_for_existing_animal(client: AsyncClient):

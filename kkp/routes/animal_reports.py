@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Query
+from loguru import logger
 from pytz import UTC
 
 from kkp.config import FCM
@@ -56,7 +57,9 @@ async def create_animal_report(user: JwtMaybeAuthUserDep, data: CreateAnimalRepo
                 device_token=session.fcm_token,
             )
         except Exception as e:
-            ...  # TODO: log error
+            logger.opt(exception=e).warning(
+                f"Failed to send notification to session {session.id} ({session.fcm_token!r})"
+            )
 
     return await report.to_json()
 
@@ -81,8 +84,7 @@ async def get_recent_unassigned_reports(query: RecentReportsQuery = Query()):
 
 @router.get("/my", response_model=PaginationResponse[AnimalReportInfo])
 async def get_my_reports(user: JwtAuthVetDep, query: MyAnimalReportsQuery = Query()):
-    reports_query = AnimalReport.filter(assigned_to=user)
-    # TODO: exclude reports that have treatment reports associated with them
+    reports_query = AnimalReport.filter(assigned_to=user, treatmentreports=None)
 
     order = query.order_by
     if query.order == "desc":
