@@ -10,7 +10,7 @@ from starlette.responses import JSONResponse
 from tortoise import generate_config
 from tortoise.contrib.fastapi import RegisterTortoise
 
-from .config import config, S3
+from .config import config, S3, SMTP
 from .routes import auth, animals, media, users, subscriptions, animal_reports, admin, messages, treatment_reports, \
     vet_clinics, volunteer_requests, donations
 from .utils.custom_exception import CustomMessageException
@@ -60,7 +60,7 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
             config=orm_config,
             generate_schemas=True,
             _create_db=is_testing,
-    ):
+    ), SMTP:
         yield
 
 

@@ -1,7 +1,10 @@
+import re
+from asyncio import sleep
 from time import time
 
 import pytest
 from httpx import AsyncClient
+from pydantic import RootModel
 from pytest_httpx import HTTPXMock
 
 from kkp.models import User
@@ -9,7 +12,8 @@ from kkp.schemas.auth import GoogleAuthUrlData, ConnectGoogleData
 from kkp.schemas.users import UserInfo
 from kkp.utils.google_oauth import GOOGLE_TOKEN_URL, GOOGLE_USERINFO_URL
 from kkp.utils.mfa import Mfa
-from tests.conftest import PWD_HASH_123456789, httpx_mock_decorator
+from tests.conftest import PWD_HASH_123456789, httpx_mock_decorator, MAILCATCHER_PORT, MailCatcherEmailMetadata, \
+    get_reset_token
 from tests.google_mock import GoogleMockState
 
 
@@ -238,5 +242,76 @@ async def test_register_login_with_google(client: AsyncClient, httpx_mock: HTTPX
     user_info2 = UserInfo(**response.json())
     assert user_info == user_info2
 
+    response = await client.post("/auth/login", json={
+        "email": user_info.email,
+        "password": "any-password-is-wrong-because-user-doesnt-have-password",
+    })
+    assert response.status_code == 400, response.json()
 
-# TODO: add password reset tests
+
+@pytest.mark.asyncio
+async def test_reset_password(client: AsyncClient):
+    user = await User.create(
+        email=f"test{time()}@gmail.com", password=PWD_HASH_123456789, first_name="f", last_name="l",
+    )
+
+    response = await client.post("/auth/reset-password/request", json={
+        "email": user.email,
+    })
+    assert response.status_code == 204, response.json()
+
+    reset_token = await get_reset_token(user.email)
+
+    response = await client.post("/auth/reset-password/reset", json={
+        "reset_token": reset_token,
+        "new_password": "147258369",
+    })
+    assert response.status_code == 204, response.json()
+
+    response = await client.post("/auth/login", json={
+        "email": user.email,
+        "password": "147258369",
+    })
+    assert response.status_code == 200, response.json()
+
+
+@pytest.mark.asyncio
+async def test_reset_password_invalid_token(client: AsyncClient):
+    user = await User.create(
+        email=f"test{time()}@gmail.com", password=PWD_HASH_123456789, first_name="f", last_name="l",
+    )
+
+    response = await client.post("/auth/reset-password/request", json={
+        "email": user.email,
+    })
+    assert response.status_code == 204, response.json()
+
+    reset_token = await get_reset_token(user.email)
+
+    response = await client.post("/auth/reset-password/reset", json={
+        "reset_token": reset_token+"A",
+        "new_password": "147258369",
+    })
+    assert response.status_code == 400, response.json()
+
+
+@pytest.mark.asyncio
+async def test_reset_password_user_deleted(client: AsyncClient):
+    user = await User.create(
+        email=f"test{time()}@gmail.com", password=PWD_HASH_123456789, first_name="f", last_name="l",
+    )
+
+    response = await client.post("/auth/reset-password/request", json={
+        "email": user.email,
+    })
+    assert response.status_code == 204, response.json()
+
+    reset_token = await get_reset_token(user.email)
+
+    await user.delete()
+
+    response = await client.post("/auth/reset-password/reset", json={
+        "reset_token": reset_token,
+        "new_password": "147258369",
+    })
+    assert response.status_code == 400, response.json()

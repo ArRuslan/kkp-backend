@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from kkp.dependencies import JwtAuthUserDep
-from kkp.models import Media, VolunteerRequest, VolRequestStatus, UserRole
+from kkp.models import Media, VolunteerRequest, VolRequestStatus, UserRole, MediaStatus
 from kkp.schemas.volunteer_requests import VolunteerRequestInfo, CreateVolunteerRequest
 from kkp.utils.custom_exception import CustomMessageException
 
@@ -25,7 +25,7 @@ async def create_volunteer_requests(user: JwtAuthUserDep, data: CreateVolunteerR
     if await VolunteerRequest.filter(user=user, status=VolRequestStatus.REQUESTED).exists():
         raise CustomMessageException("You already have requested volunteer status", 400)
 
-    medias = await Media.filter(uploaded_by=user, id__in=data.media_ids)
+    medias = await Media.filter(uploaded_by=user, id__in=data.media_ids, status=MediaStatus.UPLOADED)
     vol_request = await VolunteerRequest.create(
         user=user,
         text=data.text,

@@ -5,7 +5,7 @@ from tortoise.expressions import Q, Subquery
 from tortoise.functions import Max
 
 from kkp.dependencies import JwtAuthUserDep
-from kkp.models import Dialog, Message, User, Media
+from kkp.models import Dialog, Message, User, Media, MediaStatus
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 from kkp.schemas.messages import DialogInfo, CreateMessageRequest, MessageInfo, MessagePaginationQuery, \
     GetLastMessagesRequest
@@ -110,7 +110,7 @@ async def send_message(user_id: int, user: JwtAuthUserDep, data: CreateMessageRe
 
     media = None
     if data.media_id is not None:
-        if (media := await Media.get_or_none(id=data.media_id, uploaded_by=user)) is None:
+        if (media := await Media.get_or_none(id=data.media_id, uploaded_by=user, status=MediaStatus.UPLOADED)) is None:
             raise CustomMessageException("Media does not exist!")
 
     message = await Message.create(dialog=dialog, author=user, text=data.text, media=media)

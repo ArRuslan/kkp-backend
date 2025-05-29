@@ -1,10 +1,13 @@
 from email.message import EmailMessage
 
+from loguru import logger
+
 from kkp.config import SMTP, FCM
 from kkp.models import User, Session
 
 
 async def send_notification(user: User, title: str, text: str, email: bool = True, fcm: bool = True) -> None:
+    logger.info(email)
     if email:
         message = EmailMessage()
         message["From"] = "kkp@example.com"
@@ -13,9 +16,9 @@ async def send_notification(user: User, title: str, text: str, email: bool = Tru
         message.set_content(text)
 
         try:
-            await SMTP.send(message, timeout=5)
+            await SMTP.send_message(message, timeout=5)
         except Exception as e:
-            ...  # TODO: log error
+            logger.opt(exception=e).error(f"Failed to send email to {email}!")
 
     if fcm:
         for session in await Session.filter(user=user, fcm_token__not=None).order_by("-fcm_token_time").limit(10):

@@ -243,10 +243,10 @@ async def request_reset_password(data: ResetPasswordRequest):
     if (user := await User.get_or_none(email=data.email)) is None:
         return
 
-    if config.SMTP_PORT <= 0:
+    if config.smtp_port <= 0:  # pragma: no cover
         raise CustomMessageException("Smtp is not configured!")
 
-    reset_token = JWT.encode({"u": user.id, "type": "password-reset"}, config.JWT_KEY, expires_in=60 * 30)
+    reset_token = JWT.encode({"u": user.id, "type": "password-reset"}, config.jwt_key, expires_in=60 * 30)
 
     await send_notification(
         user,
@@ -261,7 +261,7 @@ async def request_reset_password(data: ResetPasswordRequest):
 
 @router.post("/reset-password/reset", status_code=204)
 async def reset_password(data: RealResetPasswordRequest):
-    if (payload := JWT.decode(data.reset_token, config.JWT_KEY)) is None or payload.get("type") != "password-reset":
+    if (payload := JWT.decode(data.reset_token, config.jwt_key)) is None or payload.get("type") != "password-reset":
         raise CustomMessageException("Password reset request is invalid!")
     if (user := await User.get_or_none(id=payload["u"])) is None:
         raise CustomMessageException("User not found!")

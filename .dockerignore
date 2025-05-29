@@ -5,3 +5,4 @@
 **/.env
 **/coverage.xml
 **/coverage.coverage
+**/.git

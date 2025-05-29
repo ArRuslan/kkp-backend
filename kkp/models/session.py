@@ -58,6 +58,12 @@ class Session(Model):
     async def from_jwt(cls, token: str) -> Session | None:
         if (payload := JWT.decode(token, config.jwt_key)) is None:
             return None
+        if "s" not in payload or not isinstance(payload["s"], int):
+            return None
+        if "u" not in payload or not isinstance(payload["u"], int):
+            return None
+        if "n" not in payload or not isinstance(payload["n"], str):
+            return None
 
         return await Session.get_or_none(
             id=payload["s"], user__id=payload["u"], nonce=payload["n"]

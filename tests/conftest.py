@@ -1,3 +1,5 @@
+import re
+from asyncio import sleep
 from os import environ, urandom
 from time import time
 from typing import AsyncGenerator
@@ -9,6 +11,7 @@ from asgi_lifespan import LifespanManager
 from bcrypt import gensalt, hashpw
 from fastapi import FastAPI
 from httpx import AsyncClient, RemoteProtocolError, ASGITransport
+from pydantic import BaseModel, RootModel
 
 MINIO_PORT = 55001
 MINIO_ENDPOINT = f"http://127.0.0.1:{MINIO_PORT}"
@@ -289,3 +292,49 @@ async def run_redis_in_docker():
 
     await container.delete(force=True)
     await docker.close()
+
+
+class MailCatcherEmailMetadata(BaseModel):
+    id: int
+    sender: str
+    recipients: list[str]
+    subject: str
+    size: int
+    created_at: str
+
+
+MailCatcherEmailMetadataList = RootModel[list[MailCatcherEmailMetadata]]
+RESET_LINK_RE = re.compile(r'reset-password\?reset_token=([a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+)\b')
+
+
+async def get_reset_token(user_email: str) -> str:
+    async with AsyncClient() as cl:
+        email_id = None
+
+        for _ in range(5):
+            resp = await cl.get(f"http://127.0.0.1:{MAILCATCHER_PORT}/messages")
+            emails = MailCatcherEmailMetadataList(resp.json())
+            if not emails.root:
+                await sleep(.5)
+                continue
+
+            for email in emails.root:
+                if email_id is not None:
+                    break
+
+                for recipient in email.recipients:
+                    if recipient == f"<{user_email}>":
+                        email_id = email.id
+
+            if email_id is not None:
+                break
+
+            await sleep(.5)
+
+        assert email_id is not None
+
+        resp = await cl.get(f"http://127.0.0.1:{MAILCATCHER_PORT}/messages/{email_id}.plain")
+        reset_tokens = RESET_LINK_RE.findall(resp.text)
+        assert reset_tokens
+
+    return reset_tokens[0]
