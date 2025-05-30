@@ -8,8 +8,8 @@ from tortoise import Tortoise
 from .config import config
 
 
-async def migrate():  # pragma: no cover
-    is_testing = environ.get("TORTOISE_TESTING") == "1"
+async def migrate():
+    is_testing = environ.get("KKP_TESTING") == "1"
     if not is_testing:
         command = Command({
             "connections": {"default": config.db_connection_string},

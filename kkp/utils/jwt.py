@@ -11,9 +11,9 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.x509 import load_pem_x509_certificate
 
 _CERTIFICATE_MARKER = b"-----BEGIN CERTIFICATE-----"
-_BACKEND = backends.default_backend()
-_PADDING = padding.PKCS1v15()
-_SHA256 = hashes.SHA256()
+JWT_RS_BACKEND = backends.default_backend()
+JWT_RS_PADDING = padding.PKCS1v15()
+JWT_RS_SHA256 = hashes.SHA256()
 
 
 def assert_(value: ..., exc_cls: type[Exception] = ValueError):  # pragma: no cover
@@ -22,6 +22,8 @@ def assert_(value: ..., exc_cls: type[Exception] = ValueError):  # pragma: no co
 
 
 class JWT:
+    _PUBKEY_CACHE = {}
+
     @staticmethod
     def _b64encode(data: bytes | dict) -> str:
         if isinstance(data, dict):
@@ -45,15 +47,19 @@ class JWT:
         return sig
 
     @staticmethod
-    def _verify_rs256(data: bytes, key: bytes, signature: bytes) -> bytes:
-        if _CERTIFICATE_MARKER in key:
-            cert = load_pem_x509_certificate(key, _BACKEND)
-            pubkey = cert.public_key()
-        else:
-            pubkey = serialization.load_pem_public_key(key, _BACKEND)
+    def _verify_rs256(data: bytes, key: bytes, signature: bytes, kid: str) -> bytes:
+        if kid not in JWT._PUBKEY_CACHE:
+            if _CERTIFICATE_MARKER in key:
+                cert = load_pem_x509_certificate(key, JWT_RS_BACKEND)
+                pubkey = cert.public_key()
+            else:
+                pubkey = serialization.load_pem_public_key(key, JWT_RS_BACKEND)
+            JWT._PUBKEY_CACHE[kid] = pubkey
+
+        pubkey = JWT._PUBKEY_CACHE[kid]
 
         try:
-            pubkey.verify(signature, data, _PADDING, _SHA256)
+            pubkey.verify(signature, data, JWT_RS_PADDING, JWT_RS_SHA256)
             return signature
         except (ValueError, InvalidSignature):
             return b""
@@ -77,7 +83,7 @@ class JWT:
             if (kid := header_dict.get("kid")) is None or not isinstance(secret, dict) or kid not in secret:
                 return None
 
-            sig = JWT._verify_rs256(data, secret[kid].encode("utf8"), signature)
+            sig = JWT._verify_rs256(data, secret[kid].encode("utf8"), signature, kid)
         else:
             return None
 

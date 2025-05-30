@@ -181,7 +181,7 @@ async def google_auth_callback(data: GoogleOAuthData):
     elif state is None and existing_auth is not None:
         # Authorize user
         user = existing_auth.user
-    else:
+    else:  # pragma: no cover
         raise RuntimeError("Unreachable")
 
     if user is None:
@@ -228,7 +228,7 @@ async def google_auth_mobile_callback(data: GoogleIdOAuthData):
     elif existing_auth is not None:
         # Authorize user
         user = existing_auth.user
-    else:
+    else:  # pragma: no cover
         raise RuntimeError("Unreachable")
 
     session = await Session.create(user=user, active=True)

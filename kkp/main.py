@@ -17,7 +17,7 @@ from .utils.custom_exception import CustomMessageException
 
 
 @asynccontextmanager
-async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
+async def migrate_and_connect_orm(app_: FastAPI):
     policy_retries = 3
     for i in range(policy_retries):
         try:
@@ -31,7 +31,7 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
                 }]
             })
             break
-        except RemoteProtocolError:
+        except RemoteProtocolError:  # pragma: no cover
             if i == policy_retries - 1:
                 raise
 
@@ -48,7 +48,7 @@ async def migrate_and_connect_orm(app_: FastAPI):  # pragma: no cover
         },
     })
 
-    is_testing = environ.get("TORTOISE_TESTING") == "1"
+    is_testing = environ.get("KKP_TESTING") == "1"
     orm_config = generate_config(
         config.db_connection_string,
         app_modules={"models": ["kkp.models"]},

@@ -3,23 +3,22 @@ from functools import wraps
 from typing import ParamSpec, TypeVar, Callable, Protocol
 
 import aiocache
-from loguru import logger
 
 P = ParamSpec("P")
 Tdict = TypeVar("Tdict", bound=dict)
 
 
 class Cacheable(Protocol):
-    def cache_key(self) -> str:
+    def cache_key(self) -> str:  # pragma: no cover
         ...
 
-    def cache_ns(self) -> str:
+    def cache_ns(self) -> str:  # pragma: no cover
         ...
 
 TC = TypeVar("TC", bound=Cacheable)
 
 class CachedFunc(Protocol):
-    async def __call__(self: Cacheable, *args, **kwargs) -> Tdict:
+    async def __call__(self: Cacheable, *args, **kwargs) -> Tdict:  # pragma: no cover
         ...
 
 
@@ -45,11 +44,6 @@ class Cache:
 
         cls._init_maybe()
         return await cls._cache.get(key, namespace=ns)
-
-    @classmethod
-    async def delete(cls, ns: str, key: str) -> None:
-        cls._init_maybe()
-        await cls._cache.delete(key, namespace=ns)
 
     @classmethod
     async def delete_obj(cls, obj: Cacheable) -> None:

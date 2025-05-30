@@ -7,7 +7,6 @@ from kkp.models import User, Session
 
 
 async def send_notification(user: User, title: str, text: str, email: bool = True, fcm: bool = True) -> None:
-    logger.info(email)
     if email:
         message = EmailMessage()
         message["From"] = "kkp@example.com"
@@ -17,7 +16,7 @@ async def send_notification(user: User, title: str, text: str, email: bool = Tru
 
         try:
             await SMTP.send_message(message, timeout=5)
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.opt(exception=e).error(f"Failed to send email to {email}!")
 
     if fcm:
@@ -25,4 +24,6 @@ async def send_notification(user: User, title: str, text: str, email: bool = Tru
             try:
                 await FCM.send_notification(title, text, device_token=session.fcm_token)
             except Exception as e:
-                ...  # TODO: log error
+                logger.opt(exception=e).warning(
+                    f"Failed to send notification to session {session.id} ({session.fcm_token!r})"
+                )

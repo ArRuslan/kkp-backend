@@ -68,6 +68,9 @@ async def test_get_report(client: AsyncClient):
     response = await client.get(f"/animal-reports/{report_id}", headers={"authorization": user2_token})
     assert response.status_code == 403, response.json()
 
+    response = await client.get(f"/animal-reports/{report_id}")
+    assert response.status_code == 403, response.json()
+
 
 class PaginationAnimalReportResponse(PaginationResponse[AnimalReportInfo]):
     pass

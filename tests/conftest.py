@@ -32,7 +32,7 @@ environ["s3_access_secret_key"] = MINIO_CRED
 environ["db_connection_string"] = f"mysql://root:{MARIADB_PASS}@127.0.0.1:{MARIADB_PORT}/{MARIADB_DB}_{{}}"
 environ["smtp_port"] = str(SMTP_PORT)
 environ["redis_port"] = str(REDIS_PORT)
-environ["TORTOISE_TESTING"] = "1"
+environ["KKP_TESTING"] = "1"
 
 from kkp.main import app
 from kkp.models import UserRole, User, Session

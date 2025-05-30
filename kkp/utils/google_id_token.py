@@ -4,10 +4,9 @@ from kkp.utils.jwt import JWT
 
 # The URL that provides public certificates for verifying ID tokens issued
 # by Google's OAuth 2.0 authorization server.
-_GOOGLE_OAUTH2_CERTS_URL = "https://www.googleapis.com/oauth2/v1/certs"
+GOOGLE_OAUTH2_CERTS_URL = "https://www.googleapis.com/oauth2/v1/certs"
+GOOGLE_ISSUERS = ["accounts.google.com", "https://accounts.google.com"]
 _GOOGLE_CERTS = None
-
-_GOOGLE_ISSUERS = ["accounts.google.com", "https://accounts.google.com"]
 
 
 async def _fetch_certs() -> dict[str, str]:
@@ -17,7 +16,7 @@ async def _fetch_certs() -> dict[str, str]:
         return _GOOGLE_CERTS
 
     async with AsyncClient(follow_redirects=True) as cl:
-        resp = await cl.get(_GOOGLE_OAUTH2_CERTS_URL)
+        resp = await cl.get(GOOGLE_OAUTH2_CERTS_URL)
         if resp.status_code >= 400:
             return {}
         _GOOGLE_CERTS = resp.json()
@@ -61,8 +60,8 @@ async def verify_oauth2_token(id_token: str, audience: str):
     if idinfo is None:
         raise ValueError(f"Failed to verify token")
 
-    if idinfo["iss"] not in _GOOGLE_ISSUERS:
-        raise ValueError(f"Wrong issuer. 'iss' should be one of the following: {_GOOGLE_ISSUERS}")
+    if idinfo["iss"] not in GOOGLE_ISSUERS:
+        raise ValueError(f"Wrong issuer. 'iss' should be one of the following: {GOOGLE_ISSUERS}")
     if idinfo["aud"] != audience:
         raise ValueError(f"Wrong audience. 'aud' should be: {audience}")
 
