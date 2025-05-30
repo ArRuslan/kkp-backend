@@ -105,7 +105,7 @@ async def _get_container(docker: Docker, name: str):
             return None
         else:
             info = await container.show()
-            if not info["State"]["Running"]:
+            if not info["State"]["Running"] or True:
                 await container.restart()
             return container
 
@@ -131,7 +131,7 @@ async def run_minio_in_docker():
                 "MINIO_DEFAULT_BUCKETS=kkp",
             ],
             "HostConfig": {
-                "AutoRemove": True,
+                "AutoRemove": not REUSE_TEST_CONTAINERS,
                 "CapDrop": ["ALL"],
                 "Memory": 1024 * 1024 * 1024,
                 "SecurityOpt": ["no-new-privileges"],
@@ -193,7 +193,7 @@ async def run_mariadb_in_docker():
                 f"MARIADB_PASSWORD={MARIADB_PASS}",
             ],
             "HostConfig": {
-                "AutoRemove": True,
+                "AutoRemove": not REUSE_TEST_CONTAINERS,
                 "Memory": 128 * 1024 * 1024,
                 "PortBindings": {
                     "3306/tcp": [{
@@ -233,7 +233,7 @@ async def run_mailcatcher_in_docker():
         container = await docker.containers.run(name="kkp-test-mailcatcher", config={
             "Image": "schickling/mailcatcher:latest",
             "HostConfig": {
-                "AutoRemove": True,
+                "AutoRemove": not REUSE_TEST_CONTAINERS,
                 "Memory": 64 * 1024 * 1024,
                 "PortBindings": {
                     "1025/tcp": [{"HostPort": f"{SMTP_PORT}"}],
@@ -272,7 +272,7 @@ async def run_redis_in_docker():
         container = await docker.containers.run(name="kkp-test-redis", config={
             "Image": "redis:latest",
             "HostConfig": {
-                "AutoRemove": True,
+                "AutoRemove": not REUSE_TEST_CONTAINERS,
                 "Memory": 64 * 1024 * 1024,
                 "PortBindings": {
                     "6379/tcp": [{"HostPort": f"{REDIS_PORT}"}],

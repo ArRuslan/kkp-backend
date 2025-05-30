@@ -1,16 +1,11 @@
 import pytest
 from httpx import AsyncClient
-from pytest_httpx import HTTPXMock
 
-from kkp.models import UserRole, DonationGoal, Session, VetClinic, GeoPoint
+from kkp.models import UserRole, Session, VetClinic, GeoPoint
 from kkp.schemas.common import PaginationResponse
-from kkp.schemas.donations import DonationGoalInfo, DonationInfo, DonationCreatedInfo
 from kkp.schemas.users import UserInfo
 from kkp.schemas.vet_clinics import VetClinicInfo
-from kkp.utils.paypal import PayPal
-from tests.conftest import create_token, httpx_mock_decorator
-from tests.paypal_mock import PaypalMockState
-
+from tests.conftest import create_token
 
 LON = 42.42424242
 LAT = 24.24242424
@@ -84,6 +79,20 @@ async def test_create_vet_clinic(client: AsyncClient):
     assert (resp.result == [clinic1, clinic2]) or (resp.result == [clinic2, clinic1])
 
     response = await client.get("/admin/vet-clinic", headers={"authorization": vet_admin_token})
+    assert response.status_code == 200, response.json()
+    resp = PaginatedClinicsResponse(**response.json())
+    assert resp.count == 1
+    assert len(resp.result) == 1
+    assert resp.result[0] == clinic2
+
+    response = await client.get("/vet-clinic/near", params={"lat": LAT, "lon": LON})
+    assert response.status_code == 200, response.json()
+    resp = PaginatedClinicsResponse(**response.json())
+    assert resp.count == 1
+    assert len(resp.result) == 1
+    assert resp.result[0] == clinic1
+
+    response = await client.get("/vet-clinic/near", params={"lat": LON, "lon": LAT})
     assert response.status_code == 200, response.json()
     resp = PaginatedClinicsResponse(**response.json())
     assert resp.count == 1
