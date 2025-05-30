@@ -29,7 +29,7 @@ async def create_upload(user: JwtMaybeAuthUserDep, data: CreateMediaUploadReques
 @router.post("/{media_id}/finalize", response_model=MediaInfo)
 async def finalize_upload(user: JwtMaybeAuthUserDep, media_id: int):
     if (media := await Media.get_or_none(uploaded_by=user, id=media_id)) is None:
-        raise CustomMessageException(f"Unknown media!")
+        raise CustomMessageException(f"Unknown media!", 404)
     if media.status is not MediaStatus.CREATED:
         raise CustomMessageException(f"Invalid media state!")
     if (time() - media.uploaded_at.timestamp()) > 60 * 60:
@@ -38,8 +38,6 @@ async def finalize_upload(user: JwtMaybeAuthUserDep, media_id: int):
         raise CustomMessageException(f"Upload time exceeded!")
     if not await S3.get_object(config.s3_bucket_name, media.object_key()):
         raise CustomMessageException(f"Media is not uploaded!")
-
-    # TODO: validate that file is indeed photo/video?
 
     media.uploaded_at = datetime.now(UTC)
     media.status = MediaStatus.UPLOADED
