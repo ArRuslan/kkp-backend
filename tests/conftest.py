@@ -13,6 +13,8 @@ from fastapi import FastAPI
 from httpx import AsyncClient, RemoteProtocolError, ASGITransport
 from pydantic import BaseModel, RootModel
 
+REUSE_TEST_CONTAINERS = True
+
 MINIO_PORT = 55001
 MINIO_ENDPOINT = f"http://127.0.0.1:{MINIO_PORT}"
 MINIO_CRED = "minioadmin"
@@ -91,6 +93,25 @@ def check_sorted(it: list[int]):
     return True
 
 
+async def _get_container(docker: Docker, name: str):
+    try:
+        container = await docker.containers.get(name)
+    except DockerError as e:
+        if e.status != 404:
+            raise
+    else:
+        if not REUSE_TEST_CONTAINERS:
+            await container.delete(force=True, v=True)
+            return None
+        else:
+            info = await container.show()
+            if not info["State"]["Running"]:
+                await container.restart()
+            return container
+
+    return None
+
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def run_minio_in_docker():
     print("Starting minio container...")
@@ -98,35 +119,29 @@ async def run_minio_in_docker():
 
     docker = Docker()
 
-    try:
-        existing_container = await docker.containers.get("kkp-test-minio")
-    except DockerError as e:
-        if e.status != 404:
-            raise
-    else:
-        await existing_container.delete(force=True)
-
-    container = await docker.containers.run(name="kkp-test-minio", config={
-        "Image": "bitnami/minio:2024",
-        "Env": [
-            "MINIO_ROOT_USER=minioadmin",
-            "MINIO_ROOT_PASSWORD=minioadmin",
-            "MINIO_SERVER_ACCESS_KEY=minioadmin",
-            "MINIO_SERVER_SECRET_KEY=minioadmin",
-            "MINIO_DEFAULT_BUCKETS=kkp",
-        ],
-        "HostConfig": {
-            "AutoRemove": True,
-            "CapDrop": ["ALL"],
-            "Memory": 1024 * 1024 * 1024,
-            "SecurityOpt": ["no-new-privileges"],
-            "PortBindings": {
-                "9000/tcp": [{
-                    "HostPort": f"{MINIO_PORT}",
-                }],
-            }
-        },
-    })
+    container = await _get_container(docker, "kkp-test-minio")
+    if container is None:
+        container = await docker.containers.run(name="kkp-test-minio", config={
+            "Image": "bitnami/minio:2024",
+            "Env": [
+                "MINIO_ROOT_USER=minioadmin",
+                "MINIO_ROOT_PASSWORD=minioadmin",
+                "MINIO_SERVER_ACCESS_KEY=minioadmin",
+                "MINIO_SERVER_SECRET_KEY=minioadmin",
+                "MINIO_DEFAULT_BUCKETS=kkp",
+            ],
+            "HostConfig": {
+                "AutoRemove": True,
+                "CapDrop": ["ALL"],
+                "Memory": 1024 * 1024 * 1024,
+                "SecurityOpt": ["no-new-privileges"],
+                "PortBindings": {
+                    "9000/tcp": [{
+                        "HostPort": f"{MINIO_PORT}",
+                    }],
+                },
+            },
+        })
 
     async with AsyncClient() as cl:
         while True:
@@ -155,7 +170,8 @@ async def run_minio_in_docker():
 
     yield
 
-    await container.delete(force=True)
+    if not REUSE_TEST_CONTAINERS:
+        await container.delete(force=True, v=True)
     await docker.close()
 
 
@@ -165,32 +181,27 @@ async def run_mariadb_in_docker():
     start_time = time()
 
     docker = Docker()
-    try:
-        existing_container = await docker.containers.get("kkp-test-mariadb")
-    except DockerError as e:
-        if e.status != 404:
-            raise
-    else:
-        await existing_container.delete(force=True)
 
-    container = await docker.containers.run(name="kkp-test-mariadb", config={
-        "Image": "mariadb:10.6",
-        "Env": [
-            f"MARIADB_ROOT_PASSWORD={MARIADB_PASS}",
-            f"MARIADB_DATABASE={MARIADB_DB}",
-            f"MARIADB_USER={MARIADB_USER}",
-            f"MARIADB_PASSWORD={MARIADB_PASS}",
-        ],
-        "HostConfig": {
-            "AutoRemove": True,
-            "Memory": 128 * 1024 * 1024,
-            "PortBindings": {
-                "3306/tcp": [{
-                    "HostPort": f"{MARIADB_PORT}",
-                }],
-            }
-        },
-    })
+    container = await _get_container(docker, "kkp-test-mariadb")
+    if container is None:
+        container = await docker.containers.run(name="kkp-test-mariadb", config={
+            "Image": "mariadb:10.6",
+            "Env": [
+                f"MARIADB_ROOT_PASSWORD={MARIADB_PASS}",
+                f"MARIADB_DATABASE={MARIADB_DB}",
+                f"MARIADB_USER={MARIADB_USER}",
+                f"MARIADB_PASSWORD={MARIADB_PASS}",
+            ],
+            "HostConfig": {
+                "AutoRemove": True,
+                "Memory": 128 * 1024 * 1024,
+                "PortBindings": {
+                    "3306/tcp": [{
+                        "HostPort": f"{MARIADB_PORT}",
+                    }],
+                },
+            },
+        })
 
     while True:
         ping_exec = await container.exec([f"mysqladmin", "ping", "--host=127.0.0.1", f"--password={MARIADB_PASS}", "--silent"])
@@ -205,7 +216,8 @@ async def run_mariadb_in_docker():
 
     yield
 
-    await container.delete(force=True)
+    if not REUSE_TEST_CONTAINERS:
+        await container.delete(force=True, v=True)
     await docker.close()
 
 
@@ -215,25 +227,20 @@ async def run_mailcatcher_in_docker():
     start_time = time()
 
     docker = Docker()
-    try:
-        existing_container = await docker.containers.get("kkp-test-mailcatcher")
-    except DockerError as e:
-        if e.status != 404:
-            raise
-    else:
-        await existing_container.delete(force=True)
 
-    container = await docker.containers.run(name="kkp-test-mailcatcher", config={
-        "Image": "schickling/mailcatcher:latest",
-        "HostConfig": {
-            "AutoRemove": True,
-            "Memory": 64 * 1024 * 1024,
-            "PortBindings": {
-                "1025/tcp": [{"HostPort": f"{SMTP_PORT}"}],
-                "1080/tcp": [{"HostPort": f"{MAILCATCHER_PORT}"}],
-            }
-        },
-    })
+    container = await _get_container(docker, "kkp-test-mailcatcher")
+    if container is None:
+        container = await docker.containers.run(name="kkp-test-mailcatcher", config={
+            "Image": "schickling/mailcatcher:latest",
+            "HostConfig": {
+                "AutoRemove": True,
+                "Memory": 64 * 1024 * 1024,
+                "PortBindings": {
+                    "1025/tcp": [{"HostPort": f"{SMTP_PORT}"}],
+                    "1080/tcp": [{"HostPort": f"{MAILCATCHER_PORT}"}],
+                }
+            },
+        })
 
     async with AsyncClient() as cl:
         while True:
@@ -248,7 +255,8 @@ async def run_mailcatcher_in_docker():
 
     yield
 
-    await container.delete(force=True)
+    if not REUSE_TEST_CONTAINERS:
+        await container.delete(force=True, v=True)
     await docker.close()
 
 
@@ -258,24 +266,19 @@ async def run_redis_in_docker():
     start_time = time()
 
     docker = Docker()
-    try:
-        existing_container = await docker.containers.get("kkp-test-redis")
-    except DockerError as e:
-        if e.status != 404:
-            raise
-    else:
-        await existing_container.delete(force=True)
 
-    container = await docker.containers.run(name="kkp-test-redis", config={
-        "Image": "redis:latest",
-        "HostConfig": {
-            "AutoRemove": True,
-            "Memory": 64 * 1024 * 1024,
-            "PortBindings": {
-                "6379/tcp": [{"HostPort": f"{REDIS_PORT}"}],
-            }
-        },
-    })
+    container = await _get_container(docker, "kkp-test-redis")
+    if container is None:
+        container = await docker.containers.run(name="kkp-test-redis", config={
+            "Image": "redis:latest",
+            "HostConfig": {
+                "AutoRemove": True,
+                "Memory": 64 * 1024 * 1024,
+                "PortBindings": {
+                    "6379/tcp": [{"HostPort": f"{REDIS_PORT}"}],
+                }
+            },
+        })
 
     ready = False
     while not ready:
@@ -290,7 +293,8 @@ async def run_redis_in_docker():
 
     yield
 
-    await container.delete(force=True)
+    if not REUSE_TEST_CONTAINERS:
+        await container.delete(force=True, v=True)
     await docker.close()
 
 

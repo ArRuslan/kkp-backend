@@ -20,7 +20,7 @@ async def send_notification(user: User, title: str, text: str, email: bool = Tru
             logger.opt(exception=e).error(f"Failed to send email to {email}!")
 
     if fcm:
-        for session in await Session.filter(user=user, fcm_token__not=None).order_by("-fcm_token_time").limit(10):
+        for session in await Session.filter(user=user, fcm_token__not_isnull=True).order_by("-fcm_token_time").limit(10):
             try:
                 await FCM.send_notification(title, text, device_token=session.fcm_token)
             except Exception as e:
