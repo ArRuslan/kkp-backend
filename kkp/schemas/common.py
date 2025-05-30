@@ -29,7 +29,6 @@ class PaginationQuery(BaseModel):
         return value
 
 
-# TODO: move to separate file?
 class GeoPointInfo(BaseModel):
     id: int
     name: str | None

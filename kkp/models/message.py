@@ -15,7 +15,6 @@ class Message(Model):
     text: str = fields.TextField()
     media: models.Media | None = fields.ForeignKeyField("models.Media", null=True, default=None)
     date: datetime = fields.DatetimeField(auto_now_add=True)
-    # TODO: replies?
 
     media_id: int | None
 

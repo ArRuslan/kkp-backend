@@ -277,3 +277,45 @@ async def test_edit_user_occupied_email(client: AsyncClient):
     assert response.status_code == 200, response.json()
     resp = UserInfo(**response.json())
     assert resp.email == old_email
+
+
+@pytest.mark.asyncio
+async def test_change_password_wrong_old(client: AsyncClient):
+    user = await User.create(
+        email=f"test{int(time())}@gmail.com", password=PWD_HASH_123456789, first_name="first", last_name="last",
+    )
+    session = await Session.create(user=user)
+    token = session.to_jwt()
+
+    response = await client.patch("/user/password", headers={"authorization": token}, json={
+        "old_password": "123456788",
+        "new_password": "987654321",
+    })
+    assert response.status_code == 400, response.json()
+
+    response = await client.post("/auth/login", json={
+        "email": user.email,
+        "password": "123456789",
+    })
+    assert response.status_code == 200, response.json()
+
+
+@pytest.mark.asyncio
+async def test_update_location(client: AsyncClient):
+    user = await User.create(
+        email=f"test{int(time())}@gmail.com", password=PWD_HASH_123456789, first_name="first", last_name="last",
+    )
+    session = await Session.create(user=user)
+    token = session.to_jwt()
+
+    assert session.location.lat == 0
+    assert session.location.lon == 0
+
+    response = await client.post("/user/location", headers={"authorization": token}, json={
+        "latitude": 12.34,
+        "longitude": 56.78,
+    })
+    assert response.status_code == 204, response.json()
+    await session.refresh_from_db()
+    assert session.location.lat == 12.34
+    assert session.location.lon == 56.78
