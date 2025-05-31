@@ -36,13 +36,7 @@ async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
     }
 
 
-# Note to myself: idk about that, maybe whole messages routes system needs rewrite.
-#  Current implementation is good for just getting dialogs and messages.
-#  But my biggest concern is processing new messages on clients, when they already have some messages,
-#  for example if client does not have any messages, it just calls /messages (if on "dialogs" screen),
-#  then /messages/last-messages, and if "dialog messages" screen is opened, it calls /messages/{user_id}
-#  with specific offsets (e.g. before_id)
-@router.post("/last-messages", response_model=dict[int, MessageInfo])
+@router.post("/last-messages", response_model=dict[int, MessageInfo], deprecated=True)
 async def get_last_messages(user: JwtAuthUserDep, data: GetLastMessagesRequest):
     dialog_q = Q(dialog__to_user=user) | Q(dialog__from_user=user)
 
