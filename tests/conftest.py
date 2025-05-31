@@ -63,7 +63,8 @@ async def app_with_lifespan() -> AsyncGenerator[FastAPI, None]:
         yield manager.app
 
     from kkp.utils.cache import Cache
-    await Cache._cache.close()
+    if Cache._cache is not None:
+        await Cache._cache.close()
 
 
 @pytest_asyncio.fixture
