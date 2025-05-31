@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Query
+from loguru import logger
 from s3lite import S3Exception
 
 from kkp.config import S3, config
@@ -50,6 +51,6 @@ async def get_media(media: AdminMediaDep):
 async def delete_media(media: AdminMediaDep):
     try:
         await S3.delete_object(config.s3_bucket_name, media.object_key())
-    except S3Exception:
-        ...
+    except S3Exception as e:
+        logger.opt(exception=e).warning(f"Failed to delete s3 object for media with {media.id!r} ({media.media_id!r})")
     await media.delete()

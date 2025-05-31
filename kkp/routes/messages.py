@@ -16,11 +16,13 @@ from kkp.utils.notification_util import send_notification
 router = APIRouter(prefix="/messages")
 
 
-# TODO: return dialogs ordered by last message time
-# TODO: dont use pages, better use offsets, e.g. last message id offset
+# TODO: dont use pages? instead use offsets, e.g. last message id offset
 @router.get("", response_model=PaginationResponse[DialogInfo])
 async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
-    dialogs_q = Dialog.filter(Q(to_user=user) | Q(from_user=user))
+    dialogs_q = Dialog\
+        .filter(Q(to_user=user) | Q(from_user=user))\
+        .annotate(last_message=Max("messages__id"))\
+        .order_by("-last_message")
 
     Cache.suffix(f"u{user.id}-withlast")
     return {

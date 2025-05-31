@@ -175,3 +175,55 @@ async def test_send_message_to_other_user_with_media(client: AsyncClient):
     assert resp.result[0].text == message_resp.text
     assert resp.result[0].author == message_resp.author
     assert resp.result[0].dialog.user.id == user1.id
+
+
+@pytest.mark.asyncio
+async def test_messages_dialogs_ordering_by_last_message(client: AsyncClient):
+    user1 = await create_user(UserRole.REGULAR)
+    session1 = await Session.create(user=user1)
+    user_token1 = session1.to_jwt()
+    user2 = await create_user(UserRole.REGULAR)
+
+    response = await client.get(f"/messages", headers={"authorization": user_token1})
+    assert response.status_code == 200, response.json()
+    resp = DialogPaginationResponse(**response.json())
+    assert resp.count == 0
+    assert len(resp.result) == 0
+
+    response = await client.post(f"/messages/{user1.id}", headers={"authorization": user_token1}, json={
+        "text": "123 test",
+    })
+    assert response.status_code == 200, response.json()
+    assert MessageInfo(**response.json())
+
+    response = await client.get(f"/messages", headers={"authorization": user_token1})
+    assert response.status_code == 200, response.json()
+    resp = DialogPaginationResponse(**response.json())
+    assert resp.count == 1
+    assert resp.result[0].user.id == user1.id
+
+    response = await client.post(f"/messages/{user2.id}", headers={"authorization": user_token1}, json={
+        "text": "123 test",
+    })
+    assert response.status_code == 200, response.json()
+    assert MessageInfo(**response.json())
+
+    response = await client.get(f"/messages", headers={"authorization": user_token1})
+    assert response.status_code == 200, response.json()
+    resp = DialogPaginationResponse(**response.json())
+    assert resp.count == 2
+    assert resp.result[0].user.id == user2.id
+    assert resp.result[1].user.id == user1.id
+
+    response = await client.post(f"/messages/{user1.id}", headers={"authorization": user_token1}, json={
+        "text": "123 test",
+    })
+    assert response.status_code == 200, response.json()
+    assert MessageInfo(**response.json())
+
+    response = await client.get(f"/messages", headers={"authorization": user_token1})
+    assert response.status_code == 200, response.json()
+    resp = DialogPaginationResponse(**response.json())
+    assert resp.count == 2
+    assert resp.result[0].user.id == user1.id
+    assert resp.result[1].user.id == user2.id
