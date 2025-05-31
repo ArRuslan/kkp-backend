@@ -1,3 +1,5 @@
+from time import time
+
 import pytest
 from httpx import AsyncClient
 from pytest_httpx import HTTPXMock
@@ -194,7 +196,7 @@ async def test_create_donation_auth_anon(client: AsyncClient, httpx_mock: HTTPXM
 
 @httpx_mock_decorator
 @pytest.mark.asyncio
-async def test_create_donation_ended_goal(client: AsyncClient, httpx_mock: HTTPXMock):
+async def test_create_donation_autoended_goal(client: AsyncClient, httpx_mock: HTTPXMock):
     mock_state = PaypalMockState()
     httpx_mock.add_callback(mock_state.auth_callback, method="POST", url=PayPal.AUTHORIZE)
     httpx_mock.add_callback(mock_state.order_callback, method="POST", url=PayPal.CHECKOUT)
@@ -223,3 +225,41 @@ async def test_create_donation_ended_goal(client: AsyncClient, httpx_mock: HTTPX
     assert response.status_code == 400, response.json()
 
 
+@httpx_mock_decorator
+@pytest.mark.asyncio
+async def test_create_donation_ended_goal(client: AsyncClient, httpx_mock: HTTPXMock):
+    mock_state = PaypalMockState()
+    httpx_mock.add_callback(mock_state.auth_callback, method="POST", url=PayPal.AUTHORIZE)
+    httpx_mock.add_callback(mock_state.order_callback, method="POST", url=PayPal.CHECKOUT)
+    httpx_mock.add_callback(mock_state.capture_callback, method="POST", url=PaypalMockState.CAPTURE_RE)
+
+    goal = await DonationGoal.create(name="test", description="test goal", need_amount=1234.56)
+
+    response = await client.post(f"/donations/{goal.id}/donate", json={
+        "amount": 123,
+        "anonymous": True,
+        "comment": "test 123",
+    })
+    assert response.status_code == 200, response.json()
+    donation_created = DonationCreatedInfo(**response.json())
+
+    mock_state.mark_as_payed(donation_created.paypal_id)
+
+    response = await client.post(f"/donations/{goal.id}/donations/{donation_created.id}")
+    assert response.status_code == 200, response.json()
+
+    admin_token = await create_token(UserRole.GLOBAL_ADMIN)
+
+    response = await client.patch(f"/admin/donations/{goal.id}", headers={"authorization": admin_token}, json={
+        "name": "test 123",
+        "description": "test goal",
+        "ended_at": int(time() - 1),
+    })
+    assert response.status_code == 200, response.json()
+
+    response = await client.post(f"/donations/{goal.id}/donate", json={
+        "amount": 1,
+        "anonymous": True,
+        "comment": "test 123",
+    })
+    assert response.status_code == 400, response.json()
