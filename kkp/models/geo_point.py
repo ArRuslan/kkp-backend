@@ -3,7 +3,7 @@ from __future__ import annotations
 from tortoise import Model, fields
 from tortoise.contrib.mysql.indexes import SpatialIndex
 
-from kkp.db.point import Point, PointField, STDistanceSphere
+from kkp.db.point import Point, PointField, mbr_contains_sql
 
 
 class GeoPoint(Model):
@@ -37,8 +37,19 @@ class GeoPoint(Model):
 
     @classmethod
     async def get_near(cls, latitude: float, longitude: float, radius: int = 100) -> GeoPoint | None:
-        return await GeoPoint \
-            .annotate(dist=STDistanceSphere("point", Point(longitude, latitude))) \
-            .filter(dist__lt=radius) \
-            .order_by("dist") \
-            .first()
+        if not isinstance(radius, (int, float)):
+            return None
+
+        point = Point(longitude, latitude)
+        point_wkb = point.to_sql_wkb_bin().hex()
+
+        result = await GeoPoint.raw(f"""
+            SELECT *, ST_Distance_Sphere(`point`, x'{point_wkb}') `dist` 
+            FROM `geopoint` 
+            WHERE {mbr_contains_sql(point, radius)} 
+            HAVING `dist` < {radius} 
+            ORDER BY `dist`  
+            LIMIT 1
+        """)
+
+        return result[0] if result else None

@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from httpx import AsyncClient, RemoteProtocolError, ASGITransport
 from pydantic import BaseModel, RootModel
 
-REUSE_TEST_CONTAINERS = True
+REUSE_TEST_CONTAINERS = False
 
 MINIO_PORT = 55001
 MINIO_ENDPOINT = f"http://127.0.0.1:{MINIO_PORT}"

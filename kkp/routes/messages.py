@@ -37,7 +37,7 @@ async def list_dialogs(user: JwtAuthUserDep, query: PaginationQuery = Query()):
 
 
 @router.post("/last-messages", response_model=dict[int, MessageInfo], deprecated=True)
-async def get_last_messages(user: JwtAuthUserDep, data: GetLastMessagesRequest):
+async def get_last_messages(user: JwtAuthUserDep, data: GetLastMessagesRequest):  # pragma: no cover
     dialog_q = Q(dialog__to_user=user) | Q(dialog__from_user=user)
 
     Cache.suffix(f"u{user.id}")

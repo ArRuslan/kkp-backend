@@ -5,7 +5,7 @@ import struct
 from pypika_tortoise import CustomFunction
 from tortoise import fields
 from tortoise.exceptions import FieldError
-from tortoise.expressions import Function
+from tortoise.expressions import Function, RawSQL
 
 
 class Point:
@@ -70,3 +70,32 @@ class STDistanceSphere(Function):
             point_b = point_b.to_sql_wkb_bin()
 
         super().__init__(point_a, point_b)
+
+
+class STBuffer(Function):
+    database_func = CustomFunction("ST_Buffer", ["point", "radius"])
+
+    def __init__(self, point: str | Point, radius: int | float) -> None:
+        if isinstance(point, Point):
+            point = point.to_sql_wkb_bin()
+
+        super().__init__(point, radius)
+
+
+class MBRContains(Function):
+    database_func = CustomFunction("MBRContains", ["buffer", "point"])
+
+    def __init__(self, buffer: Point | Function, point: str | Point) -> None:
+        if isinstance(buffer, Point):
+            buffer = buffer.to_sql_wkb_bin()
+        if isinstance(point, Point):
+            point = point.to_sql_wkb_bin()
+
+        super().__init__(buffer, point)
+
+
+def mbr_contains_sql(point: Point, radius_meters: int | float, point_field: str = "point") -> RawSQL:
+    point_wkb = point.to_sql_wkb_bin().hex()
+    radius = radius_meters / 111320
+
+    return RawSQL(f"MBRContains(ST_Buffer(x'{point_wkb}', {radius}), `{point_field}`)")
