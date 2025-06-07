@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from tortoise import fields, Model
+from tortoise import fields
 
 from kkp import models
+from kkp.db.custom_model import CustomModel
 from kkp.utils.cache import Cache
 
 
-class TreatmentReport(Model):
+class TreatmentReport(CustomModel):
     id: int = fields.BigIntField(pk=True)
     report: models.AnimalReport = fields.ForeignKeyField("models.AnimalReport")
     created_at: datetime = fields.DatetimeField(auto_now_add=True)
@@ -18,9 +19,7 @@ class TreatmentReport(Model):
 
     @Cache.decorator()
     async def to_json(self) -> dict:
-        self.report = await self.report
-        if self.vet_clinic is not None:
-            self.vet_clinic = await self.vet_clinic
+        await self.fetch_related_maybe("report", "vet_clinic")
 
         return {
             "id": self.id,

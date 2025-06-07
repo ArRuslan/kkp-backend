@@ -1,23 +1,22 @@
 from __future__ import annotations
 
-from tortoise import Model, fields
+from tortoise import fields
 
 from kkp import models
+from kkp.db.custom_model import CustomModel
 from kkp.utils.cache import Cache
 
 
-class VetClinic(Model):
+class VetClinic(CustomModel):
     id: int = fields.BigIntField(pk=True)
     name: str = fields.CharField(max_length=255)
     location: models.GeoPoint = fields.ForeignKeyField("models.GeoPoint")
-    admin: models.User | None = fields.ForeignKeyField("models.User", null=True, related_name="vet_admin")  # make non nullable??
+    admin: models.User | None = fields.ForeignKeyField("models.User", null=True, related_name="vet_admin")
     employees: fields.ManyToManyRelation[models.User] = fields.ManyToManyField("models.User")
 
     @Cache.decorator()
     async def to_json(self) -> dict:
-        self.location = await self.location
-        if self.admin is not None:
-            self.admin = await self.admin
+        await self.fetch_related_maybe("location", "admin")
 
         return {
             "id": self.id,

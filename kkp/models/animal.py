@@ -3,9 +3,10 @@ from __future__ import annotations
 from datetime import datetime
 from enum import IntEnum
 
-from tortoise import Model, fields
+from tortoise import fields
 
 from kkp import models
+from kkp.db.custom_model import CustomModel
 from kkp.utils.cache import Cache
 
 
@@ -24,7 +25,7 @@ class AnimalGender(IntEnum):
     FEMALE = 2
 
 
-class Animal(Model):
+class Animal(CustomModel):
     id: int = fields.BigIntField(pk=True)
     name: str = fields.CharField(max_length=128)
     breed: str = fields.CharField(max_length=64)
@@ -40,8 +41,7 @@ class Animal(Model):
         total_media_count = await self.medias.all().count()
         medias = await self.medias.all().order_by("-id").limit(5)
 
-        if self.current_location is not None:
-            self.current_location = await self.current_location
+        await self.fetch_related_maybe("current_location")
 
         subscribed = False
         if current_user is not None:

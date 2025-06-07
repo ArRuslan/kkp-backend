@@ -6,6 +6,7 @@ from enum import IntEnum
 from tortoise import fields, Model
 
 from kkp import models
+from kkp.db.custom_model import CustomModel
 from kkp.utils.cache import Cache
 
 
@@ -15,7 +16,7 @@ class AnimalUpdateType(IntEnum):
     TREATMENT = 3
 
 
-class AnimalUpdate(Model):
+class AnimalUpdate(CustomModel):
     id: int = fields.BigIntField(pk=True)
     animal: models.Animal = fields.ForeignKeyField("models.Animal")
     date: datetime = fields.DatetimeField(auto_now_add=True)
@@ -25,12 +26,7 @@ class AnimalUpdate(Model):
 
     @Cache.decorator()
     async def to_json(self) -> dict:
-        self.animal = await self.animal
-
-        if self.type is AnimalUpdateType.REPORT and self.animal_report is not None:
-            self.animal_report = await self.animal_report
-        if self.type is AnimalUpdateType.TREATMENT and self.treatment_report is not None:
-            self.treatment_report = await self.treatment_report
+        await self.fetch_related_maybe("animal", "animal_report", "treatment_report")
 
         return {
             "id": self.id,

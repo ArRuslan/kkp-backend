@@ -6,6 +6,7 @@ from enum import IntEnum
 from tortoise import Model, fields
 
 from kkp import models
+from kkp.db.custom_model import CustomModel
 from kkp.utils.cache import Cache
 
 
@@ -14,7 +15,7 @@ class DonationStatus(IntEnum):
     PROCESSED = 1
 
 
-class Donation(Model):
+class Donation(CustomModel):
     id: int = fields.BigIntField(pk=True)
     user: models.User | None = fields.ForeignKeyField("models.User", null=True, default=None)
     amount: float = fields.FloatField()
@@ -26,9 +27,7 @@ class Donation(Model):
 
     @Cache.decorator()
     async def to_json(self) -> dict:
-        self.goal = await self.goal
-        if self.user is not None:
-            self.user = await self.user
+        await self.fetch_related_maybe("goal", "user")
 
         return {
             "id": self.id,

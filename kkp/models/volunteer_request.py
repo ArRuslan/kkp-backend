@@ -3,9 +3,10 @@ from __future__ import annotations
 from datetime import datetime
 from enum import IntEnum, IntFlag
 
-from tortoise import fields, Model
+from tortoise import fields
 
 from kkp import models
+from kkp.db.custom_model import CustomModel
 from kkp.db.int_flag import IntFlagField
 from kkp.utils.cache import Cache
 
@@ -29,7 +30,7 @@ class VolHelp(IntFlag):
     INFORMATION = 1 << 4
 
 
-class VolunteerRequest(Model):
+class VolunteerRequest(CustomModel):
     id: int = fields.BigIntField(pk=True)
     user: models.User = fields.ForeignKeyField("models.User")
     created_at: datetime = fields.DatetimeField(auto_now_add=True)
@@ -50,7 +51,7 @@ class VolunteerRequest(Model):
 
     @Cache.decorator()
     async def to_json(self) -> dict:
-        self.user = await self.user
+        await self.fetch_related_maybe("user")
 
         return {
             "id": self.id,

@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from tortoise import Model, fields
+from tortoise import fields
 
 from kkp import models
+from kkp.db.custom_model import CustomModel
 from kkp.utils.cache import Cache
 
 
-class Message(Model):
+class Message(CustomModel):
     id: int = fields.BigIntField(pk=True)
     dialog: models.Dialog = fields.ForeignKeyField("models.Dialog")
     author: models.User = fields.ForeignKeyField("models.User")
@@ -20,12 +21,7 @@ class Message(Model):
 
     @Cache.decorator()
     async def to_json(self, current_user: models.User) -> dict:
-        if self.dialog is not None:
-            self.dialog = await self.dialog
-        if self.author is not None:
-            self.author = await self.author
-        if self.media is not None:
-            self.media = await self.media
+        await self.fetch_related_maybe("dialog", "author", "media")
 
         return {
             "id": self.id,

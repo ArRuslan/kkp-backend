@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from datetime import datetime
-from inspect import isawaitable
 
-from tortoise import Model, fields
+from tortoise import fields
 
 from kkp import models
+from kkp.db.custom_model import CustomModel
 from kkp.utils.cache import Cache
 
 
-class AnimalReport(Model):
+class AnimalReport(CustomModel):
     id: int = fields.BigIntField(pk=True)
     reported_by: models.User | None = fields.ForeignKeyField("models.User", null=True, default=None, related_name="reported_by")
     animal: models.Animal = fields.ForeignKeyField("models.Animal")
@@ -22,21 +22,6 @@ class AnimalReport(Model):
     reported_by: int | None
     assigned_to: int | None
     location: int
-
-    # TODO: use this in other models
-    async def fetch_related_maybe(self, *fields_to_fetch: str) -> None:
-        to_fetch = []
-        for field_name in fields_to_fetch:
-            field = getattr(self, field_name)
-            if not isawaitable(field):
-                continue
-            if not field or isinstance(field, Model):
-                setattr(self, field_name, await field)
-            else:
-                to_fetch.append(field_name)
-
-        if to_fetch:
-            await self.fetch_related(*to_fetch)
 
     @Cache.decorator()
     async def to_json(self) -> dict:
