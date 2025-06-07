@@ -61,6 +61,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - LOGURU_LEVEL=DEBUG
+      - PUBLIC_HOST=${PUBLIC_HOST}
     depends_on:
       - minio
       - mariadb
