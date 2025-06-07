@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, BackgroundTasks
 from loguru import logger
 from pytz import UTC
 from tortoise.expressions import RawSQL
+from tortoise.transactions import in_transaction
 
 from kkp.config import FCM
 from kkp.db.point import Point, mbr_contains_sql
@@ -19,33 +20,9 @@ from kkp.utils.custom_exception import CustomMessageException
 router = APIRouter(prefix="/animal-reports")
 
 
-@router.post("", response_model=AnimalReportInfo)
-async def create_animal_report(user: JwtMaybeAuthUserDep, data: CreateAnimalReportsRequest):
-    location = await GeoPoint.get_near(data.latitude, data.longitude)
-    if location is None:
-        location = await GeoPoint.create(name=None, latitude=data.latitude, longitude=data.longitude)
-
-    animal_created = False
-    if data.animal_id is not None:
-        if (animal := await Animal.get_or_none(id=data.animal_id)) is None:
-            raise CustomMessageException("Unknown animal!", 404)
-    elif data.name is not None and data.breed is not None:
-        animal = await Animal.create(
-            name=data.name, breed=data.breed, status=AnimalStatus.FOUND, current_location=location,
-        )
-        animal_created = True
-    else:
-        raise CustomMessageException("You need to specify either animal id or name and breed!", 400)
-
-    report = await AnimalReport.create(reported_by=user, animal=animal, notes=data.notes, location=location)
-    if data.media_ids:
-        media = await Media.filter(id__in=data.media_ids, uploaded_by=user, status=MediaStatus.UPLOADED)
-        await report.media.add(*media)
-        await animal.medias.add(*media)
-    if not animal_created:
-        await Cache.delete_obj(animal)
-
-    await AnimalUpdate.create(animal=animal, type=AnimalUpdateType.REPORT, animal_report=report)
+async def _send_notification_task(report: AnimalReport) -> None:
+    animal = report.animal
+    location = report.location
 
     point = location.point
     point_wkb = point.to_sql_wkb_bin().hex()
@@ -54,15 +31,18 @@ async def create_animal_report(user: JwtMaybeAuthUserDep, data: CreateAnimalRepo
     before_time = int((datetime.now(UTC) - timedelta(days=14)).timestamp())
 
     sessions = await Session.raw(f"""
-        SELECT `session`.`nonce`,`session`.`active`,`session`.`user_id`,`session`.`created_at`,`session`.`location`,`session`.`location_time`,`session`.`fcm_token`,`session`.`id`,`session`.`fcm_token_time`, ST_Distance_Sphere(`session`.`location`, x'{point_wkb}') `dist`
-        FROM `session`
-        LEFT OUTER JOIN `user` `session__user` ON `session__user`.`id`=`session`.`user_id`
-        WHERE {mbr_contains_sql(point, radius, 'location')} 
-            AND `session`.`location_time` > FROM_UNIXTIME({before_time}) 
-            AND `session`.`fcm_token` IS NOT NULL 
-            AND `session__user`.`role` IN ({UserRole.VET.value}, {UserRole.VOLUNTEER.value})
-        HAVING `dist` < {radius_m} 
-    """)
+            SELECT 
+                `session`.`nonce`,`session`.`active`,`session`.`user_id`,`session`.`created_at`,`session`.`location`,
+                `session`.`location_time`,`session`.`fcm_token`,`session`.`id`,`session`.`fcm_token_time`,
+                ST_Distance_Sphere(`session`.`location`, x'{point_wkb}') `dist`
+            FROM `session`
+            LEFT OUTER JOIN `user` `session__user` ON `session__user`.`id`=`session`.`user_id`
+            WHERE {mbr_contains_sql(point, radius, 'location')} 
+                AND `session`.`location_time` > FROM_UNIXTIME({before_time}) 
+                AND `session`.`fcm_token` IS NOT NULL 
+                AND `session__user`.`role` IN ({UserRole.VET.value}, {UserRole.VOLUNTEER.value})
+            HAVING `dist` < {radius_m} 
+        """)
 
     for session in sessions:  # pragma: no cover
         try:
@@ -75,6 +55,38 @@ async def create_animal_report(user: JwtMaybeAuthUserDep, data: CreateAnimalRepo
             logger.opt(exception=e).warning(
                 f"Failed to send notification to session {session.id} ({session.fcm_token!r})"
             )
+
+
+@router.post("", response_model=AnimalReportInfo)
+async def create_animal_report(user: JwtMaybeAuthUserDep, data: CreateAnimalReportsRequest, bg: BackgroundTasks):
+    location = await GeoPoint.get_near(data.latitude, data.longitude)
+    if location is None:
+        location = await GeoPoint.create(name=None, latitude=data.latitude, longitude=data.longitude)
+
+    async with in_transaction():
+        animal_created = False
+        if data.animal_id is not None:
+            if (animal := await Animal.get_or_none(id=data.animal_id)) is None:
+                raise CustomMessageException("Unknown animal!", 404)
+        elif data.name is not None and data.breed is not None:
+            animal = await Animal.create(
+                name=data.name, breed=data.breed, status=AnimalStatus.FOUND, current_location=location,
+            )
+            animal_created = True
+        else:
+            raise CustomMessageException("You need to specify either animal id or name and breed!", 400)
+
+        report = await AnimalReport.create(reported_by=user, animal=animal, notes=data.notes, location=location)
+        if data.media_ids:
+            media = await Media.filter(id__in=data.media_ids, uploaded_by=user, status=MediaStatus.UPLOADED)
+            await report.media.add(*media)
+            await animal.medias.add(*media)
+        if not animal_created:
+            await Cache.delete_obj(animal)
+
+        await AnimalUpdate.create(animal=animal, type=AnimalUpdateType.REPORT, animal_report=report)
+
+    bg.add_task(_send_notification_task, report)
 
     return await report.to_json()
 

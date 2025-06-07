@@ -1,10 +1,11 @@
 from datetime import datetime
+from typing import Literal, cast
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, BackgroundTasks
 from pytz import UTC
 
 from kkp.dependencies import JwtAuthAdminDepN, AdminVolunteerRequestDep
-from kkp.models import UserRole, VolRequestStatus, VolunteerRequest
+from kkp.models import UserRole, VolRequestStatus, VolunteerRequest, User
 from kkp.schemas.admin.volunteer_requests import VolReqPaginationQuery, ApproveRejectVolunteerRequest
 from kkp.schemas.common import PaginationResponse
 from kkp.schemas.volunteer_requests import VolunteerRequestInfo
@@ -49,8 +50,21 @@ async def get_volunteer_request(vol_request: AdminVolunteerRequestDep):
     return await vol_request.to_json()
 
 
+async def _send_approve_reject_notification(user: User, type_: Literal["approved", "rejected"], comment: str) -> None:
+    await send_notification(
+        user,
+        f"Volunteer request {type_}",
+        (
+                f"Your volunteer request has been {type_}!\n"
+                + (f"Comment: \n{comment}" if comment else "")
+        ),
+    )
+
+
 @router.post("/{volunteer_request_id}/approve", response_model=VolunteerRequestInfo)
-async def approve_volunteer_request(vol_request: AdminVolunteerRequestDep, data: ApproveRejectVolunteerRequest):
+async def approve_volunteer_request(
+        vol_request: AdminVolunteerRequestDep, data: ApproveRejectVolunteerRequest, bg: BackgroundTasks,
+):
     if vol_request.user.role < UserRole.VOLUNTEER:
         vol_request.user.role = UserRole.VOLUNTEER
         await vol_request.user.save(update_fields=["role"])
@@ -76,33 +90,27 @@ async def approve_volunteer_request(vol_request: AdminVolunteerRequestDep, data:
         await vol_request.user.save(update_fields=update_user)
         await Cache.delete_obj(vol_request.user)
 
-    await send_notification(
-        vol_request.user,
-        "Volunteer request approved",
-        (
-            f"Your volunteer request has been approved!\n"
-            +(f"Comment: \n{vol_request.review_text}" if vol_request.review_text else "")
-        ),
+    bg.add_task(
+        _send_approve_reject_notification,
+        vol_request.user, cast("approved", Literal["approved"]), vol_request.review_text,
     )
 
     return await vol_request.to_json()
 
 
 @router.post("/{volunteer_request_id}/reject", response_model=VolunteerRequestInfo)
-async def reject_volunteer_request(vol_request: AdminVolunteerRequestDep, data: ApproveRejectVolunteerRequest):
+async def reject_volunteer_request(
+        vol_request: AdminVolunteerRequestDep, data: ApproveRejectVolunteerRequest, bg: BackgroundTasks,
+):
     vol_request.status = VolRequestStatus.REFUSED
     vol_request.review_text = data.text
     vol_request.reviewed_at = datetime.now(UTC)
     await vol_request.save(update_fields=["status", "review_text", "reviewed_at"])
     await Cache.delete_obj(vol_request)
 
-    await send_notification(
-        vol_request.user,
-        "Volunteer request rejected",
-        (
-                f"Your volunteer request has been rejected!\n"
-                + (f"Comment: \n{vol_request.review_text}" if vol_request.review_text else "")
-        ),
+    bg.add_task(
+        _send_approve_reject_notification,
+        vol_request.user, cast("rejected", Literal["rejected"]), vol_request.review_text,
     )
 
     return await vol_request.to_json()

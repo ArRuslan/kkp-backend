@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, BackgroundTasks
 from tortoise.expressions import Q, Subquery
 from tortoise.functions import Max
 
@@ -95,8 +95,19 @@ async def get_messages(user_id: int, user: JwtAuthUserDep, query: MessagePaginat
     }
 
 
+async def _send_message_nofitication_task(to_user: User, from_user: User, text: str) -> None:
+    await send_notification(
+        to_user,
+        "New message",
+        (
+                f"You have new message from {from_user.first_name}!\n"
+                + (f"Comment: \n{text}" if text else "")
+        ),
+    )
+
+
 @router.post("/{user_id}", response_model=MessageInfo)
-async def send_message(user_id: int, user: JwtAuthUserDep, data: CreateMessageRequest):
+async def send_message(user_id: int, user: JwtAuthUserDep, data: CreateMessageRequest, bg: BackgroundTasks):
     if (other_user := await User.get_or_none(id=user_id)) is None:
         raise CustomMessageException("Unknown dialog.", 404)
 
@@ -112,14 +123,8 @@ async def send_message(user_id: int, user: JwtAuthUserDep, data: CreateMessageRe
     message = await Message.create(dialog=dialog, author=user, text=data.text, media=media)
     await Cache.delete_obj(dialog)
 
-    await send_notification(
-        other_user,
-        "New message",
-        (
-                f"You have new message from {user.first_name}!\n"
-                + (f"Comment: \n{message.text}" if message.text else "")
-        ),
-    )
+    if user != other_user:
+        bg.add_task(_send_message_nofitication_task, other_user, user, message.text)
 
     Cache.suffix(f"u{user.id}")
     return await message.to_json(user)

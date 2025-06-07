@@ -2,7 +2,7 @@ from os import urandom
 from time import time
 
 import bcrypt
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 from starlette.responses import JSONResponse
 
 from kkp.config import config
@@ -238,16 +238,7 @@ async def google_auth_mobile_callback(data: GoogleIdOAuthData):
     }
 
 
-@router.post("/reset-password/request", status_code=204)
-async def request_reset_password(data: ResetPasswordRequest):
-    if (user := await User.get_or_none(email=data.email)) is None:
-        return
-
-    if config.smtp_port <= 0:  # pragma: no cover
-        raise CustomMessageException("Smtp is not configured!")
-
-    reset_token = JWT.encode({"u": user.id, "type": "password-reset"}, config.jwt_key, expires_in=60 * 30)
-
+async def _send_password_reset_email_task(user: User, reset_token: str) -> None:
     await send_notification(
         user,
         "Password reset",
@@ -257,6 +248,18 @@ async def request_reset_password(data: ResetPasswordRequest):
         ),
         fcm=False,
     )
+
+
+@router.post("/reset-password/request", status_code=204)
+async def request_reset_password(data: ResetPasswordRequest, bg: BackgroundTasks):
+    if (user := await User.get_or_none(email=data.email)) is None:
+        return
+
+    if config.smtp_port <= 0:  # pragma: no cover
+        raise CustomMessageException("Smtp is not configured!")
+
+    reset_token = JWT.encode({"u": user.id, "type": "password-reset"}, config.jwt_key, expires_in=60 * 30)
+    bg.add_task(_send_password_reset_email_task, user, reset_token)
 
 
 @router.post("/reset-password/reset", status_code=204)

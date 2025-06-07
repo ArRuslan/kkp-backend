@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from inspect import isawaitable
 
 from tortoise import Model, fields
 
@@ -22,20 +23,24 @@ class AnimalReport(Model):
     assigned_to: int | None
     location: int
 
-    @Cache.decorator()
-    async def to_json(self) -> dict:
+    # TODO: use this in other models
+    async def fetch_related_maybe(self, *fields_to_fetch: str) -> None:
         to_fetch = []
-        if self.reported_by is not None:
-            to_fetch.append("reported_by")
-        if self.assigned_to is not None:
-            to_fetch.append("assigned_to")
-        if self.animal is not None:
-            to_fetch.append("animal")
-        if self.location is not None:
-            to_fetch.append("location")
+        for field_name in fields_to_fetch:
+            field = getattr(self, field_name)
+            if not isawaitable(field):
+                continue
+            if not field or isinstance(field, Model):
+                setattr(self, field_name, await field)
+            else:
+                to_fetch.append(field_name)
 
         if to_fetch:
             await self.fetch_related(*to_fetch)
+
+    @Cache.decorator()
+    async def to_json(self) -> dict:
+        await self.fetch_related_maybe("reported_by", "assigned_to", "animal", "location")
 
         return {
             "id": self.id,

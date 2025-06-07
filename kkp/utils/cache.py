@@ -1,4 +1,5 @@
 from contextvars import ContextVar
+from enum import Enum, auto
 from functools import wraps
 from typing import ParamSpec, TypeVar, Callable, Protocol
 
@@ -6,6 +7,12 @@ import aiocache
 
 P = ParamSpec("P")
 Tdict = TypeVar("Tdict", bound=dict)
+
+
+class _CacheDisabled(Enum):
+    NONE = auto()
+    READ = auto()
+    READWRITE = auto()
 
 
 class Cacheable(Protocol):
@@ -24,7 +31,7 @@ class CachedFunc(Protocol):
 
 class Cache:
     _cache: aiocache.BaseCache | None = None
-    _disabled: ContextVar[bool] = ContextVar("_disabled", default=False)
+    _disabled: ContextVar[_CacheDisabled] = ContextVar("_disabled", default=_CacheDisabled.NONE)
     _suffix: ContextVar[str] = ContextVar("_suffix", default="")
 
     @classmethod
@@ -34,12 +41,15 @@ class Cache:
 
     @classmethod
     async def set(cls, ns: str, key: str, obj: dict, ttl: int = 60 * 60) -> None:
+        if cls._disabled.get() is _CacheDisabled.READWRITE:
+            return None
+
         cls._init_maybe()
         await cls._cache.set(key, obj, namespace=ns, ttl=ttl)
 
     @classmethod
     async def get(cls, ns: str, key: str) -> dict | None:
-        if cls._disabled.get():
+        if cls._disabled.get() in (_CacheDisabled.READ, _CacheDisabled.READWRITE):
             return None
 
         cls._init_maybe()
@@ -51,8 +61,8 @@ class Cache:
         await cls._cache.clear(namespace=obj.cache_ns())
 
     @classmethod
-    def disable(cls) -> None:
-        cls._disabled.set(True)
+    def disable(cls, completely: bool = False) -> None:
+        cls._disabled.set(_CacheDisabled.READWRITE if completely else _CacheDisabled.READ)
 
     @classmethod
     def suffix(cls, suffix: str) -> None:
@@ -70,7 +80,7 @@ class Cache:
                 if cls._suffix.get():
                     cache_key += f"-{cls._suffix.get()}"
 
-                if not cls._disabled.get() and (cached := await cls.get(cache_ns, cache_key)) is not None:
+                if (cached := await cls.get(cache_ns, cache_key)) is not None:
                     return cached
 
                 result = await func(self, *args, **kwargs)
