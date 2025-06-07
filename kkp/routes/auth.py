@@ -244,7 +244,8 @@ async def _send_password_reset_email_task(user: User, reset_token: str) -> None:
         "Password reset",
         (
             f"Click the following link to reset your password: "
-            f"{config.public_host}/reset-password?reset_token={reset_token}"
+            f"{config.public_host}/reset-password?reset_token={reset_token}\n"
+            f"Or enter this token in token field in reset password dialog window: {reset_token}"
         ),
         fcm=False,
     )
