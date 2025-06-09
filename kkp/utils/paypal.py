@@ -1,6 +1,7 @@
 from time import time
 
 from httpx import AsyncClient
+from loguru import logger
 
 from .custom_exception import CustomMessageException
 from ..config import config
@@ -26,7 +27,7 @@ class PayPal:
                 )
 
                 j = resp.json()
-                #logfire.debug(f"Paypal token response", code=resp.status_code, body=j)
+                logger.debug(f"Paypal token response, code={resp.status_code!r}, body={j!r}")
 
                 if "access_token" not in j or "expires_in" not in j:
                     raise CustomMessageException(
@@ -55,12 +56,12 @@ class PayPal:
             )
 
             j_resp = resp.json()
-            #logfire.debug(f"Paypal create order response", code=resp.status_code, body=j_resp)
+            logger.debug(f"Paypal create order response, code={resp.status_code!r}, body={j_resp!r}")
 
             if "id" not in j_resp:
-                #logfire.error(
-                #    f"Failed to create PayPal order!", paypal_code=resp.status_code, paypal_resp=j_resp,
-                #)
+                logger.error(
+                    f"Failed to create PayPal order, paypal_code={resp.status_code!r}, paypal_resp={j_resp!r}"
+                )
                 raise CustomMessageException(
                     "Failed to create PayPal order!" if config.is_debug else "An error occurred with PayPal"
                 )
@@ -77,12 +78,12 @@ class PayPal:
             )
 
             j_resp = resp.json()
-            #logfire.debug(f"Paypal capture response", code=resp.status_code, body=j_resp)
+            logger.debug(f"Paypal capture response, code={resp.status_code!r}, body={j_resp!r}")
 
             if resp.status_code >= 400 or j_resp["status"] != "COMPLETED":
-                #logfire.error(
-                #    f"Failed to capture PayPal!", paypal_code=resp.status_code, paypal_resp=j_resp,
-                #)
+                logger.error(
+                    f"Failed to capture PayPal, paypal_code={resp.status_code!r}, paypal_resp={j_resp!r}"
+                )
                 return None
 
             try:
