@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, BackgroundTasks
 from pytz import UTC
 
 from kkp.dependencies import AnimalDep, JwtAuthUserDepN, JwtAuthVetDepN, JwtMaybeAuthUserDep
@@ -12,6 +12,7 @@ from kkp.schemas.animals import AnimalInfo, EditAnimalRequest
 from kkp.schemas.common import PaginationResponse, PaginationQuery
 from kkp.schemas.treatment_reports import TreatmentReportInfo
 from kkp.utils.cache import Cache
+from kkp.utils.payouts import check_payout_maybe
 
 router = APIRouter(prefix="/animals")
 
@@ -90,7 +91,7 @@ async def edit_animal(animal: AnimalDep, data: EditAnimalRequest):
     return await animal.to_json()
 
 
-@router.get("/{animal_id}/reports", response_model=PaginationResponse[AnimalReportInfo], dependencies=[JwtAuthUserDepN], deprecated=False)
+@router.get("/{animal_id}/reports", response_model=PaginationResponse[AnimalReportInfo], dependencies=[JwtAuthUserDepN])
 async def get_animal_reports(animal: AnimalDep, query: PaginationQuery = Query()):
     return {
         "count": await AnimalReport.filter(animal=animal).count(),
@@ -104,17 +105,22 @@ async def get_animal_reports(animal: AnimalDep, query: PaginationQuery = Query()
     }
 
 
-@router.get("/{animal_id}/treatment-reports", response_model=PaginationResponse[TreatmentReportInfo], dependencies=[JwtAuthUserDepN], deprecated=False)
-async def get_animal_treatment_reports(animal: AnimalDep, query: PaginationQuery = Query()):
-    return {
-        "count": await TreatmentReport.filter(report__animal=animal).count(),
-        "result": [
-            await report.to_json()
-            for report in await TreatmentReport.filter(report__animal=animal)\
+@router.get("/{animal_id}/treatment-reports", response_model=PaginationResponse[TreatmentReportInfo], dependencies=[JwtAuthUserDepN])
+async def get_animal_treatment_reports(animal: AnimalDep, bg: BackgroundTasks, query: PaginationQuery = Query()):
+    reports_count = await TreatmentReport.filter(report__animal=animal).count()
+    reports = await TreatmentReport.filter(report__animal=animal)\
                 .select_related(
                 "report", "report__reported_by", "report__assigned_to", "report__animal", "report__location"
                 )\
                 .limit(query.page_size)\
                 .offset(query.page_size * (query.page - 1))
-        ],
+    reports_json = []
+
+    for report in reports:
+        reports_json.append(await report.to_json())
+        check_payout_maybe(bg, report)
+
+    return {
+        "count": reports_count,
+        "result": reports_json,
     }

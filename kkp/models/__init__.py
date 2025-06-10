@@ -9,7 +9,7 @@ from .geo_point import GeoPoint
 from .media import Media, MediaType, MediaStatus
 from .message import Message
 from .session import Session
-from .treatment_report import TreatmentReport
+from .treatment_report import TreatmentReport, PayoutStatus
 from .user import User, UserRole
 from .user_profile_photo import UserProfilePhoto
 from .vet_clinic import VetClinic

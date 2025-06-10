@@ -226,7 +226,6 @@ async def google_auth_mobile_callback(data: GoogleIdOAuthData):
             token_expires_at=0,
         )
     elif existing_auth is not None:
-        # Authorize user
         user = existing_auth.user
     else:  # pragma: no cover
         raise RuntimeError("Unreachable")
