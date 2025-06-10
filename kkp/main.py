@@ -93,6 +93,11 @@ app.include_router(volunteer_requests.router)
 app.include_router(donations.router)
 
 
+@app.get("/health", status_code=200)
+async def health_check():
+    ...
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(_, exc: RequestValidationError) -> JSONResponse:
     result = []
