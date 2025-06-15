@@ -2,6 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Query, BackgroundTasks
 from pytz import UTC
+from tortoise.transactions import in_transaction
 
 from kkp.dependencies import JwtAuthAdminDepN, AdminTreatmentReportDep
 from kkp.models import TreatmentReport, PayoutStatus
@@ -25,6 +26,8 @@ async def get_treatment_reports(bg: BackgroundTasks, query: ReportsQuery = Query
         reports_query = reports_query.filter(id=query.id)
     if query.report_id is not None:
         reports_query = reports_query.filter(report__id=query.report_id)
+    if query.payout_status is not None:
+        reports_query = reports_query.filter(payout_status=query.payout_status)
 
     order = query.order_by
     if query.order == "desc":
@@ -63,15 +66,22 @@ async def delete_animal_report(report: AdminTreatmentReportDep):
 
 @router.post("/{treatment_report_id}/payout", response_model=TreatmentReportInfo)
 async def create_treatment_report_payout(report: AdminTreatmentReportDep):
-    if report.payout_status is PayoutStatus.NOT_REQUESTED:
-        raise CustomMessageException("User did not request payout for this treatment report")
-    if report.payout_status in (PayoutStatus.PENDING, PayoutStatus.COMPLETED):
-        raise CustomMessageException("Payout already approved for this treatment report")
+    async with in_transaction():
+        report_for_update = await TreatmentReport.filter(id=report.id).select_for_update().get()
 
-    report.payout_id = await PayPal.create_payout(report.id, report.payout_email, report.money_spent)
-    report.payout_status = PayoutStatus.PENDING
-    report.payout_last_checked = datetime.now(UTC)
-    await report.save(update_fields=["payout_id", "payout_status", "payout_last_checked"])
+        if report_for_update.payout_status is PayoutStatus.NOT_REQUESTED:
+            raise CustomMessageException("User did not request payout for this treatment report")
+        if report_for_update.payout_status in (PayoutStatus.PENDING, PayoutStatus.COMPLETED):
+            raise CustomMessageException("Payout already approved for this treatment report")
+
+        report_for_update.payout_id = await PayPal.create_payout(report.id, report.payout_email, report.money_spent)
+        report_for_update.payout_status = PayoutStatus.PENDING
+        report_for_update.payout_last_checked = datetime.now(UTC)
+        await report_for_update.save(update_fields=["payout_id", "payout_status", "payout_last_checked"])
+
+    report.payout_id = report_for_update.payout_id
+    report.payout_status = report_for_update.payout_status
+    report.payout_last_checked = report_for_update.payout_last_checked
 
     await send_notification(
         await report.report.assigned_to,

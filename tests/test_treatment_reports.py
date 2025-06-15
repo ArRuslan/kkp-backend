@@ -1,3 +1,4 @@
+import asyncio
 from asyncio import sleep
 from datetime import datetime, UTC, timedelta
 
@@ -142,3 +143,44 @@ async def test_treatment_report_payout(client: AsyncClient, httpx_mock: HTTPXMoc
     assert response.status_code == 200, response.json()
     treatment_report = TreatmentReportInfo(**response.json())
     assert treatment_report.payout_status is PayoutStatus.COMPLETED
+
+
+@httpx_mock_decorator
+@pytest.mark.asyncio
+async def test_treatment_report_payout_multiple_times_at_once(client: AsyncClient, httpx_mock: HTTPXMock):
+    Cache.disable()
+    mock_state = PaypalMockState(wait=1)
+    httpx_mock.add_callback(mock_state.auth_callback, method="POST", url=PayPal.AUTHORIZE)
+    httpx_mock.add_callback(mock_state.payout_create_callback, method="POST", url=PayPal.PAYOUTS)
+    httpx_mock.add_callback(mock_state.payout_get_callback, method="GET", url=PaypalMockState.GET_PAYOUT_RE)
+
+    admin_token = await create_token(UserRole.GLOBAL_ADMIN)
+    vet_token = await create_token(UserRole.VET)
+
+    report = await AnimalReport.create(
+        animal=await Animal.create(name=f"test 123", breed="test idk", status=AnimalStatus.FOUND),
+        location=await GeoPoint.create(latitude=LAT, longitude=LON),
+    )
+
+    response = await client.post(f"/animal-reports/{report.id}/assign", headers={"authorization": vet_token})
+    assert response.status_code == 200, response.json()
+
+    response = await client.post("/treatment-reports", headers={"authorization": vet_token}, json={
+        "animal_report_id": report.id,
+        "description": "test treatment report",
+        "money_spent": 123.5,
+        "payout_email": "asd@example.com",
+    })
+    assert response.status_code == 200, response.json()
+    treatment_report = TreatmentReportInfo(**response.json())
+    assert treatment_report.payout_status is PayoutStatus.REQUESTED
+
+    results = await asyncio.gather(
+        client.post(f"/admin/treatment-reports/{report.id}/payout", headers={"authorization": admin_token}),
+        client.post(f"/admin/treatment-reports/{report.id}/payout", headers={"authorization": admin_token}),
+    )
+
+    assert mock_state.payouts_count == 1
+
+    status_codes = {result.status_code for result in results}
+    assert status_codes == {200, 400}

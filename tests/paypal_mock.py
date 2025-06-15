@@ -1,5 +1,6 @@
 import json
 import re
+from asyncio import sleep
 from base64 import b64encode
 from time import time
 
@@ -14,15 +15,20 @@ class PaypalMockState:
 
     def __init__(
             self, client_id: str = config.paypal_id, client_secret: str = config.paypal_secret, money: int = 1000,
+            wait: int = 0,
     ) -> None:
         self._client_id = client_id
         self._client_secret = client_secret
         self._money = money
+        self._wait = wait
         self._orders = {}
         self._payouts = {}
         self._captures = {}
 
-    def auth_callback(self, request: Request) -> Response:
+    async def auth_callback(self, request: Request) -> Response:
+        if self._wait:
+            await sleep(self._wait)
+
         auth = b64encode(f"{self._client_id}:{self._client_secret}".encode("utf8")).decode("utf8")
         if request.headers.get("authorization") != f"Basic {auth}":
             return Response(status_code=401, json={
@@ -38,7 +44,10 @@ class PaypalMockState:
             "expires_in": 32400,
         })
 
-    def order_callback(self, request: Request) -> Response:
+    async def order_callback(self, request: Request) -> Response:
+        if self._wait:
+            await sleep(self._wait)
+
         auth = b64encode(f"{self._client_id}/{self._client_secret}".encode("utf8")).decode("utf8")
         if request.headers.get("authorization") != f"Bearer {auth}":
             return Response(status_code=401, json={
@@ -56,7 +65,10 @@ class PaypalMockState:
             "id": order_id,
         })
 
-    def capture_callback(self, request: Request) -> Response:
+    async def capture_callback(self, request: Request) -> Response:
+        if self._wait:
+            await sleep(self._wait)
+
         auth = b64encode(f"{self._client_id}/{self._client_secret}".encode("utf8")).decode("utf8")
         if request.headers.get("authorization") != f"Bearer {auth}":
             return Response(status_code=401, json={
@@ -90,7 +102,10 @@ class PaypalMockState:
             }]
         })
 
-    def refund_callback(self, request: Request) -> Response:
+    async def refund_callback(self, request: Request) -> Response:
+        if self._wait:
+            await sleep(self._wait)
+
         auth = b64encode(f"{self._client_id}/{self._client_secret}".encode("utf8")).decode("utf8")
         if request.headers.get("authorization") != f"Bearer {auth}":
             return Response(status_code=401, json={
@@ -145,7 +160,10 @@ class PaypalMockState:
             }]
         }
 
-    def payout_create_callback(self, request: Request) -> Response:
+    async def payout_create_callback(self, request: Request) -> Response:
+        if self._wait:
+            await sleep(self._wait)
+
         auth = b64encode(f"{self._client_id}/{self._client_secret}".encode("utf8")).decode("utf8")
         if request.headers.get("authorization") != f"Bearer {auth}":
             return Response(status_code=401, json={
@@ -174,6 +192,10 @@ class PaypalMockState:
 
         return Response(status_code=200, json=self._payout_to_json(self._payouts[payout_id]))
 
+    @property
+    def payouts_count(self) -> int:
+        return len(self._payouts)
+
     def mark_payout_as_completed(self, payout_id: str) -> None:
         if payout_id not in self._payouts:
             return
@@ -182,7 +204,10 @@ class PaypalMockState:
 
         self._payouts[payout_id]["completed"] = True
 
-    def payout_get_callback(self, request: Request) -> Response:
+    async def payout_get_callback(self, request: Request) -> Response:
+        if self._wait:
+            await sleep(self._wait)
+
         auth = b64encode(f"{self._client_id}/{self._client_secret}".encode("utf8")).decode("utf8")
         if request.headers.get("authorization") != f"Bearer {auth}":
             return Response(status_code=401, json={
