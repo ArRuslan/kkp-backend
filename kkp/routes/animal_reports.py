@@ -27,7 +27,6 @@ async def _send_notification_task(report: AnimalReport) -> None:
     point = location.point
     point_wkb = point.to_sql_wkb_bin().hex()
     radius_m = 25000
-    radius = radius_m / 111320
     before_time = int((datetime.now(UTC) - timedelta(days=14)).timestamp())
 
     sessions = await Session.raw(f"""
@@ -37,7 +36,7 @@ async def _send_notification_task(report: AnimalReport) -> None:
                 ST_Distance_Sphere(`session`.`location`, x'{point_wkb}') `dist`
             FROM `session`
             LEFT OUTER JOIN `user` `session__user` ON `session__user`.`id`=`session`.`user_id`
-            WHERE {mbr_contains_sql(point, radius, 'location')} 
+            WHERE {mbr_contains_sql(point, radius_m, 'location')} 
                 AND `session`.`location_time` > FROM_UNIXTIME({before_time}) 
                 AND `session`.`fcm_token` IS NOT NULL 
                 AND `session__user`.`role` IN ({UserRole.VET.value}, {UserRole.VOLUNTEER.value})
@@ -96,7 +95,6 @@ async def get_recent_unassigned_reports(query: RecentReportsQuery = Query()):
     point = Point(query.lon, query.lat)
     point_wkb = point.to_sql_wkb_bin().hex()
     radius_m = min(max(query.radius, 100), 10000)
-    radius = radius_m / 111320
     after_time = int((datetime.now(UTC) - timedelta(hours=12)).timestamp())
 
     sql = f"""
