@@ -113,7 +113,7 @@ async def get_recent_unassigned_reports(query: RecentReportsQuery = Query()):
     LEFT OUTER JOIN `user` `assigned_to` ON `assigned_to`.`id`=`report`.`assigned_to_id`
     LEFT OUTER JOIN `user` `reported_by` ON `reported_by`.`id`=`report`.`reported_by_id`
     LEFT OUTER JOIN `animal` `animal` ON `animal`.`id`=`report`.`animal_id`
-    WHERE {mbr_contains_sql(point, radius, 'location`.`point')} 
+    WHERE {mbr_contains_sql(point, radius_m, 'location`.`point')} 
         AND `report`.`created_at` > FROM_UNIXTIME({after_time}) 
         AND `report`.`assigned_to_id` IS NULL 
     HAVING `dist` < {radius_m}
